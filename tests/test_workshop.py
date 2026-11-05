@@ -1,15 +1,16 @@
 import unittest
-from dataclasses import replace
 
 from aster.environment import (
     Action,
     GateKind,
     Position,
     Workshop,
+    WorkshopLayout,
     collect_expert_episode,
     encode_observation,
     make_workshop_layout,
 )
+from aster.training.data import layout_id
 
 
 class WorkshopTests(unittest.TestCase):
@@ -19,7 +20,7 @@ class WorkshopTests(unittest.TestCase):
         self.assertEqual(first, second)
 
     def test_door_requires_key_and_explicit_interaction(self) -> None:
-        layout = make_workshop_layout(GateKind.DOOR, seed=3)
+        layout = _explicit_layout(GateKind.DOOR, key=Position(1, 1))
         environment = Workshop(layout)
         environment.step(Action.MOVE_EAST)
         blocked = environment.step(Action.MOVE_EAST)
@@ -42,7 +43,7 @@ class WorkshopTests(unittest.TestCase):
         self.assertTrue(opened.observation.gate_open)
 
     def test_switch_opens_bridge_before_crossing(self) -> None:
-        layout = make_workshop_layout(GateKind.BRIDGE, seed=8)
+        layout = _explicit_layout(GateKind.BRIDGE, switch=Position(1, 1))
         environment = Workshop(layout)
         environment.step(Action.MOVE_EAST)
         blocked = environment.step(Action.MOVE_EAST)
@@ -61,6 +62,15 @@ class WorkshopTests(unittest.TestCase):
             crossing = environment.step(action)
         self.assertIsNotNone(crossing)
         self.assertEqual(crossing.observation.agent, layout.gate)
+
+    def test_layout_space_supports_large_held_out_samples(self) -> None:
+        for gate_kind in GateKind:
+            with self.subTest(gate_kind=gate_kind):
+                unique = {
+                    layout_id(make_workshop_layout(gate_kind, seed=seed))
+                    for seed in range(300)
+                }
+                self.assertGreaterEqual(len(unique), 100)
 
     def test_expert_coverage_policy_solves_seeded_layouts(self) -> None:
         for gate_kind in GateKind:
@@ -105,6 +115,26 @@ class WorkshopTests(unittest.TestCase):
         layout = make_workshop_layout(GateKind.DOOR, seed=1, max_steps=0)
         with self.assertRaisesRegex(ValueError, "max_steps must be positive"):
             Workshop(layout)
+
+
+def _explicit_layout(
+    gate_kind: GateKind,
+    key: Position | None = None,
+    switch: Position | None = None,
+) -> WorkshopLayout:
+    """Canonical fixture: gate column at x=3, agent left of it, target right."""
+    return WorkshopLayout(
+        width=7,
+        height=5,
+        walls=frozenset(Position(3, row) for row in range(5) if row != 2),
+        agent_start=Position(1, 2),
+        target=Position(5, 2),
+        gate_kind=gate_kind,
+        gate=Position(3, 2),
+        max_steps=64,
+        key=key,
+        switch=switch,
+    )
 
 
 def _moves_to(start: Position, target: Position) -> list[Action]:

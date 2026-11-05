@@ -3,7 +3,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from aster.training.data import collect_examples, split_by_layout, write_splits
+from aster.training.data import (
+    collect_examples,
+    layout_id,
+    split_by_layout,
+    unseen_layout_cases,
+    write_splits,
+)
 
 
 class TrainingDataTests(unittest.TestCase):
@@ -45,6 +51,7 @@ class TrainingDataTests(unittest.TestCase):
             manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["environment_version"], 1)
             self.assertEqual(manifest["data_schema_version"], 2)
+            self.assertEqual(manifest["layout_space_version"], 2)
             self.assertEqual(manifest["counts"]["train"], len(splits.train))
             self.assertEqual(len(manifest["split_sha256"]["train"]), 64)
             self.assertTrue((output_dir / "test.jsonl").read_text(encoding="utf-8").strip())
@@ -54,6 +61,28 @@ class TrainingDataTests(unittest.TestCase):
         one_layout = tuple(row for row in examples if row.layout_id == examples[0].layout_id)
         with self.assertRaisesRegex(ValueError, "at least three"):
             split_by_layout(one_layout)
+
+    def test_unseen_layout_cases_exclude_known_ids_and_dedupe(self) -> None:
+        examples = collect_examples(range(4), random_episodes_per_layout=0, max_steps=20)
+        known_ids = {row.layout_id for row in examples}
+        pool = unseen_layout_cases(range(0, 20), known_ids, max_steps=20)
+        self.assertTrue(pool.cases)
+        self.assertEqual(len(pool.cases), len(set(pool.cases)))
+        self.assertEqual(len(pool.layout_ids), len(pool.cases))
+        self.assertFalse(known_ids & set(pool.layout_ids))
+        self.assertGreater(pool.excluded_dropped, 0)
+        for seed, gate in pool.cases:
+            self.assertGreaterEqual(seed, 4)
+            self.assertIn(gate, {"door", "bridge"})
+
+    def test_layout_id_is_deterministic_and_includes_gate_family(self) -> None:
+        from aster.environment import GateKind, make_workshop_layout
+
+        first = layout_id(make_workshop_layout(GateKind.DOOR, seed=3))
+        again = layout_id(make_workshop_layout(GateKind.DOOR, seed=3))
+        bridge = layout_id(make_workshop_layout(GateKind.BRIDGE, seed=3))
+        self.assertEqual(first, again)
+        self.assertNotEqual(first, bridge)
 
 
 if __name__ == "__main__":

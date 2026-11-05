@@ -7,15 +7,20 @@ from aster.environment import Action, GateKind, Workshop, make_workshop_layout
 LayoutCase = tuple[int, str]
 
 
-def evaluate_controller(model: TransitionModel, seeds: tuple[int, ...]) -> dict[str, float]:
+def evaluate_controller(
+    model: TransitionModel,
+    seeds: tuple[int, ...],
+    max_steps: int = 64,
+) -> dict[str, float]:
     """Convenience wrapper evaluating both gate families for each seed."""
     cases = tuple((seed, gate.value) for seed in seeds for gate in GateKind)
-    return evaluate_controller_layouts(model, cases)
+    return evaluate_controller_layouts(model, cases, max_steps=max_steps)
 
 
 def evaluate_controller_layouts(
     model: TransitionModel,
     cases: tuple[LayoutCase, ...],
+    max_steps: int = 64,
 ) -> dict[str, float]:
     """Evaluate exactly the supplied layouts, without adding paired gate cases."""
     if not cases:
@@ -25,6 +30,7 @@ def evaluate_controller_layouts(
     invalid_actions = 0
     stopped_early = 0
     successful_steps = 0
+    total_steps = 0
     by_gate = {
         gate.value: {"tasks": 0, "successes": 0, "invalid_actions": 0}
         for gate in GateKind
@@ -32,7 +38,7 @@ def evaluate_controller_layouts(
 
     for seed, gate_name in cases:
         gate_kind = GateKind(gate_name)
-        environment = Workshop(make_workshop_layout(gate_kind, seed=seed))
+        environment = Workshop(make_workshop_layout(gate_kind, seed=seed, max_steps=max_steps))
         excluded_by_state: dict[tuple[object, ...], set[Action]] = {}
 
         while not environment.done:
@@ -50,6 +56,7 @@ def evaluate_controller_layouts(
                 break
 
             result = environment.step(choice.action)
+            total_steps += 1
             if result.invalid:
                 invalid_actions += 1
                 by_gate[gate_kind.value]["invalid_actions"] += 1
@@ -70,6 +77,7 @@ def evaluate_controller_layouts(
         "invalid_actions": float(invalid_actions),
         "stopped_early": float(stopped_early),
         "mean_steps_on_success": successful_steps / successes if successes else 0.0,
+        "total_steps": float(total_steps),
     }
     for gate_name, metrics in by_gate.items():
         result[f"{gate_name}_success_rate"] = (

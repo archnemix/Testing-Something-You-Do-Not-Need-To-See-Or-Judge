@@ -17,6 +17,7 @@ from aster.environment import (
     encode_observation,
     make_workshop_layout,
 )
+from aster.environment.generation import LAYOUT_SPACE_VERSION
 
 ENVIRONMENT_VERSION = 1
 DATA_SCHEMA_VERSION = 2
@@ -50,6 +51,16 @@ class DatasetSplits:
     test_layout_ids: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class EvaluationPool:
+    """Unique unseen layouts selected for large-sample evaluation."""
+
+    cases: tuple[tuple[int, str], ...]
+    layout_ids: tuple[str, ...]
+    duplicates_dropped: int
+    excluded_dropped: int
+
+
 def collect_examples(
     seeds: Iterable[int],
     random_episodes_per_layout: int = 2,
@@ -63,10 +74,10 @@ def collect_examples(
     for seed in sorted(set(seeds)):
         for gate_kind in GateKind:
             layout = make_workshop_layout(gate_kind, seed=seed, max_steps=max_steps)
-            layout_id = _layout_id(layout)
+            layout_key = layout_id(layout)
             expert_results = collect_expert_episode(layout)
             examples.extend(
-                _to_examples(expert_results, seed, gate_kind, layout_id, "expert")
+                _to_examples(expert_results, seed, gate_kind, layout_key, "expert")
             )
             covered_states = {
                 encode_observation(result.previous_observation): result.previous_observation
@@ -80,7 +91,7 @@ def collect_examples(
                             [counterfactual],
                             seed,
                             gate_kind,
-                            layout_id,
+                            layout_key,
                             "coverage",
                         )
                     )
@@ -100,7 +111,7 @@ def collect_examples(
                         results,
                         seed,
                         gate_kind,
-                        layout_id,
+                        layout_key,
                         f"random-{episode_number}",
                     )
                 )
@@ -159,6 +170,7 @@ def write_splits(splits: DatasetSplits, output_dir: Path) -> None:
     manifest = {
         "environment_version": ENVIRONMENT_VERSION,
         "data_schema_version": DATA_SCHEMA_VERSION,
+        "layout_space_version": LAYOUT_SPACE_VERSION,
         "split_sha256": split_hashes,
         "feature_size": len(splits.train[0].state) if splits.train else 0,
         "action_names": [action.value for action in Action],
@@ -179,7 +191,8 @@ def write_splits(splits: DatasetSplits, output_dir: Path) -> None:
     )
 
 
-def _layout_id(layout: WorkshopLayout) -> str:
+def layout_id(layout: WorkshopLayout) -> str:
+    """Canonical identity of a complete layout, including gate family."""
     payload = {
         "width": layout.width,
         "height": layout.height,
@@ -196,16 +209,54 @@ def _layout_id(layout: WorkshopLayout) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def unseen_layout_cases(
+    seeds: Iterable[int],
+    excluded_layout_ids: Iterable[str],
+    max_steps: int = 64,
+) -> EvaluationPool:
+    """Select unique layouts not present in any recorded data split.
+
+    Duplicate seeds that generate the same canonical layout are collapsed
+    to one case so large-sample results can be read against unique
+    geometries as well as raw scenario counts.
+    """
+    excluded = set(excluded_layout_ids)
+    chosen: dict[str, tuple[int, str]] = {}
+    duplicates = 0
+    dropped = 0
+    for seed in sorted(set(seeds)):
+        for gate_kind in GateKind:
+            case_layout_id = layout_id(
+                make_workshop_layout(gate_kind, seed=seed, max_steps=max_steps)
+            )
+            if case_layout_id in excluded:
+                dropped += 1
+                continue
+            if case_layout_id in chosen:
+                duplicates += 1
+                continue
+            chosen[case_layout_id] = (seed, gate_kind.value)
+
+    ordered_ids = tuple(sorted(chosen))
+    cases = tuple(sorted(chosen.values()))
+    return EvaluationPool(
+        cases=cases,
+        layout_ids=ordered_ids,
+        duplicates_dropped=duplicates,
+        excluded_dropped=dropped,
+    )
+
+
 def _to_examples(
     results: Iterable[StepResult],
     seed: int,
     gate_kind: GateKind,
-    layout_id: str,
+    layout_key: str,
     episode_kind: str,
 ) -> list[TransitionExample]:
     return [
         TransitionExample(
-            layout_id=layout_id,
+            layout_id=layout_key,
             state=encode_observation(result.previous_observation),
             action=tuple(Action).index(result.action),
             next_state=encode_observation(result.observation),

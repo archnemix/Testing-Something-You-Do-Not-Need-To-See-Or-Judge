@@ -6,9 +6,17 @@ from typing import Any
 import torch
 from torch import Tensor
 
-from aster.cognition.world_model import TransitionModel, examples_to_tensors, transition_loss
-from aster.environment.encoding import CHANNELS, GLOBAL_FEATURES
+from aster.cognition.world_model import (
+    TransitionModel,
+    examples_to_tensors,
+    transition_loss,
+)
 from aster.training.data import TransitionExample
+from aster.training.metrics import (
+    agent_position_indices,
+    dynamic_state_indices,
+    field_metrics,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,92 +117,179 @@ def evaluate_world_model(
     tensors = examples_to_tensors(examples, evaluation_device)
     was_training = model.training
     model.eval()
+
     weighted_loss = 0.0
-    binary_correct = 0
-    binary_count = 0
-    agent_position_correct = 0
-    gate_state_correct = 0
-    key_state_correct = 0
-    time_absolute_error = 0.0
-    reward_absolute_error = 0.0
-    done_correct = 0
-    invalid_correct = 0
-    invalid_absolute_error = 0.0
+    predicted_states: list[Tensor] = []
+    predicted_rewards: list[Tensor] = []
+    predicted_dones: list[Tensor] = []
+    predicted_invalids: list[Tensor] = []
+    try:
+        with torch.no_grad():
+            for start in range(0, len(examples), batch_size):
+                end = min(start + batch_size, len(examples))
+                batch = tuple(tensor[start:end] for tensor in tensors)
+                state_logits, reward_prediction, done_logits, invalid_logits = model(
+                    batch[0],
+                    batch[1],
+                )
+                loss = transition_loss(
+                    (state_logits, reward_prediction, done_logits, invalid_logits),
+                    batch[2],
+                    batch[3],
+                    batch[4],
+                    batch[5],
+                )
+                weighted_loss += float(loss) * (end - start)
+                predicted_states.append(_decode_state_logits(state_logits))
+                predicted_rewards.append(torch.tanh(reward_prediction))
+                predicted_dones.append(torch.sigmoid(done_logits))
+                predicted_invalids.append(torch.sigmoid(invalid_logits))
+    finally:
+        model.train(was_training)
 
-    with torch.no_grad():
-        for start in range(0, len(examples), batch_size):
-            end = min(start + batch_size, len(examples))
-            batch = tuple(tensor[start:end] for tensor in tensors)
-            state_logits, reward_prediction, done_logits, invalid_logits = model(batch[0], batch[1])
-            loss = transition_loss(
-                (state_logits, reward_prediction, done_logits, invalid_logits),
-                batch[2],
-                batch[3],
-                batch[4],
-                batch[5],
-            )
-            count = end - start
-            weighted_loss += float(loss) * count
-            predicted_bits = state_logits > 0
-            target_bits = batch[2] > 0.5
-            cell_feature_count = len(batch[0][0]) - len(GLOBAL_FEATURES)
-            cell_count = cell_feature_count // len(CHANNELS)
-            dynamic_indices = [
-                cell * len(CHANNELS) + channel
-                for cell in range(cell_count)
-                for channel in (1, 3, 4)
-            ]
-            global_offset = cell_feature_count
-            dynamic_indices.extend((global_offset, global_offset + 1))
-            binary_correct += int(
-                (predicted_bits[:, dynamic_indices] == target_bits[:, dynamic_indices]).sum()
-            )
-            binary_count += target_bits[:, dynamic_indices].numel()
+    metrics = field_metrics(
+        torch.cat(predicted_states),
+        torch.cat(predicted_rewards),
+        torch.cat(predicted_dones),
+        torch.cat(predicted_invalids),
+        tensors[2],
+        tensors[3],
+        tensors[4],
+        tensors[5],
+    )
+    return {"loss": weighted_loss / len(examples), **metrics}
 
-            agent_indices = [
-                cell * len(CHANNELS) + 1
-                for cell in range(cell_count)
-            ]
-            agent_position_correct += int(
-                (
-                    state_logits[:, agent_indices].argmax(dim=1)
-                    == batch[2][:, agent_indices].argmax(dim=1)
-                ).sum()
-            )
-            gate_index = global_offset + GLOBAL_FEATURES.index("gate_open")
-            key_index = global_offset + GLOBAL_FEATURES.index("has_key")
-            gate_state_correct += int(
-                (predicted_bits[:, gate_index] == target_bits[:, gate_index]).sum()
-            )
-            key_state_correct += int(
-                (predicted_bits[:, key_index] == target_bits[:, key_index]).sum()
-            )
-            predicted_time = torch.sigmoid(state_logits[:, -1])
-            time_absolute_error += float((predicted_time - batch[2][:, -1]).abs().sum())
-            predicted_reward = torch.tanh(reward_prediction)
-            reward_absolute_error += float((predicted_reward - batch[3]).abs().sum())
-            predicted_done = done_logits > 0
-            done_correct += int((predicted_done == (batch[4] > 0.5)).sum())
-            predicted_invalid = torch.sigmoid(invalid_logits)
-            invalid_correct += int(
-                ((predicted_invalid > 0.5) == (batch[5] > 0.5)).sum()
-            )
-            invalid_absolute_error += float((predicted_invalid - batch[5]).abs().sum())
 
-    model.train(was_training)
-    count = len(examples)
-    return {
-        "loss": weighted_loss / count,
-        "dynamic_state_bit_accuracy": binary_correct / binary_count,
-        "agent_position_accuracy": agent_position_correct / count,
-        "gate_state_accuracy": gate_state_correct / count,
-        "key_state_accuracy": key_state_correct / count,
-        "time_remaining_mae": time_absolute_error / count,
-        "reward_mae": reward_absolute_error / count,
-        "done_accuracy": done_correct / count,
-        "invalid_action_accuracy": invalid_correct / count,
-        "invalid_action_mae": invalid_absolute_error / count,
-    }
+def evaluate_rollout_error(
+    model: TransitionModel,
+    examples: tuple[TransitionExample, ...],
+    horizons: tuple[int, ...] = (1, 3, 5, 10),
+    batch_size: int = 512,
+) -> dict[str, float]:
+    """Free-running rollout error: feed predictions back for h recorded actions.
+
+    Trajectories are maximal runs of transitions where each recorded next
+    state is exactly the following transition's start state. Horizons with
+    no covering trajectory are omitted and counted as zero.
+    """
+    if not horizons or any(horizon < 1 for horizon in horizons):
+        raise ValueError("horizons must be positive")
+    trajectories = _chained_trajectories(examples)
+    if not trajectories:
+        raise ValueError("no chained trajectories available for rollout")
+
+    device = next(model.parameters()).device
+    was_training = model.training
+    model.eval()
+    metrics: dict[str, float] = {}
+    try:
+        with torch.no_grad():
+            for horizon in sorted(set(horizons)):
+                jobs: list[tuple[tuple[float, ...], tuple[int, ...], tuple[float, ...]]] = []
+                for trajectory in trajectories:
+                    for index in range(0, len(trajectory) - horizon + 1):
+                        actions = tuple(
+                            trajectory[index + offset].action
+                            for offset in range(horizon)
+                        )
+                        jobs.append(
+                            (
+                                trajectory[index].state,
+                                actions,
+                                trajectory[index + horizon - 1].next_state,
+                            )
+                        )
+                if not jobs:
+                    metrics[f"rollout_mae_{horizon}"] = 0.0
+                    metrics[f"rollout_dynamic_bit_accuracy_{horizon}"] = 0.0
+                    metrics[f"rollout_agent_position_accuracy_{horizon}"] = 0.0
+                    metrics[f"rollout_count_{horizon}"] = 0.0
+                    continue
+
+                absolute_error = 0.0
+                bit_correct = 0
+                bit_count = 0
+                agent_correct = 0
+                for start in range(0, len(jobs), batch_size):
+                    batch = jobs[start : start + batch_size]
+                    states = torch.tensor(
+                        [item[0] for item in batch],
+                        dtype=torch.float32,
+                        device=device,
+                    )
+                    actions = torch.tensor(
+                        [item[1] for item in batch],
+                        dtype=torch.long,
+                        device=device,
+                    )
+                    targets = torch.tensor(
+                        [item[2] for item in batch],
+                        dtype=torch.float32,
+                        device=device,
+                    )
+                    for offset in range(horizon):
+                        state_logits, _, _, _ = model(states, actions[:, offset])
+                        states = _decode_state_logits(state_logits)
+                    absolute_error += float((states - targets).abs().sum())
+                    feature_size = states.shape[1]
+                    predicted_bits = states > 0.5
+                    target_bits = targets > 0.5
+                    dynamic = dynamic_state_indices(feature_size)
+                    bit_correct += int(
+                        (predicted_bits[:, dynamic] == target_bits[:, dynamic]).sum()
+                    )
+                    bit_count += target_bits[:, dynamic].numel()
+                    agents = agent_position_indices(feature_size)
+                    agent_correct += int(
+                        (
+                            states[:, agents].argmax(dim=1)
+                            == targets[:, agents].argmax(dim=1)
+                        ).sum()
+                    )
+
+                count = len(jobs)
+                metrics[f"rollout_mae_{horizon}"] = absolute_error / (count * model.feature_size)
+                metrics[f"rollout_dynamic_bit_accuracy_{horizon}"] = bit_correct / bit_count
+                metrics[f"rollout_agent_position_accuracy_{horizon}"] = agent_correct / count
+                metrics[f"rollout_count_{horizon}"] = float(count)
+    finally:
+        model.train(was_training)
+    return metrics
+
+
+def _decode_state_logits(state_logits: Tensor) -> Tensor:
+    """Map next-state logits to encoded-feature space for scoring and rollouts."""
+    predicted_state = torch.sigmoid(state_logits)
+    agents = agent_position_indices(state_logits.shape[1])
+    agent_logits = state_logits[:, agents]
+    locations = agent_logits.argmax(dim=1, keepdim=True)
+    predicted_state[:, agents] = torch.zeros_like(agent_logits).scatter_(
+        1, locations, 1.0
+    )
+    return predicted_state
+
+
+def _chained_trajectories(
+    examples: tuple[TransitionExample, ...],
+) -> list[list[TransitionExample]]:
+    """Split transitions into maximal runs of exactly connected states."""
+    grouped: dict[tuple[object, ...], list[TransitionExample]] = {}
+    for row in examples:
+        key = (row.layout_id, row.seed, row.gate_kind, row.episode_kind)
+        grouped.setdefault(key, []).append(row)
+
+    trajectories: list[list[TransitionExample]] = []
+    for rows in grouped.values():
+        rows.sort(key=lambda row: (row.step, row.action))
+        chain: list[TransitionExample] = []
+        for row in rows:
+            if chain and chain[-1].next_state != row.state:
+                trajectories.append(chain)
+                chain = []
+            chain.append(row)
+        if chain:
+            trajectories.append(chain)
+    return trajectories
 
 
 def _validate_settings(settings: TrainingSettings) -> None:

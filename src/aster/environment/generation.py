@@ -4,6 +4,8 @@ import random
 
 from aster.environment.types import GateKind, Position, WorkshopLayout
 
+LAYOUT_SPACE_VERSION = 2
+
 
 def make_workshop_layout(
     gate_kind: GateKind,
@@ -17,11 +19,17 @@ def make_workshop_layout(
         raise ValueError("Workshop layouts need width >= 5 and height >= 3")
 
     randomizer = random.Random(seed)
-    gate_x = width // 2
+    gate_x = randomizer.randrange(2, width - 2)
     gate_y = randomizer.randrange(1, height - 1)
-    available_rows = [row for row in range(height) if row != gate_y]
-    key_or_switch_y = randomizer.choice(available_rows)
+    start_y = randomizer.randrange(height)
     target_y = randomizer.randrange(height)
+    object_x = randomizer.randrange(1, gate_x)
+    object_rows = [
+        row
+        for row in range(height)
+        if row != gate_y and not (object_x == 1 and row == start_y)
+    ]
+    object_y = randomizer.choice(object_rows)
 
     crossing = Position(gate_x, gate_y)
     barrier = frozenset(
@@ -29,13 +37,13 @@ def make_workshop_layout(
         for row in range(height)
         if row != gate_y
     )
-    gate_side_object = Position(1, key_or_switch_y)
+    gate_side_object = Position(object_x, object_y)
 
     return WorkshopLayout(
         width=width,
         height=height,
         walls=barrier,
-        agent_start=Position(1, gate_y),
+        agent_start=Position(1, start_y),
         target=Position(width - 2, target_y),
         gate_kind=gate_kind,
         gate=crossing,

@@ -1,8 +1,8 @@
-"""Privileged, rule-aware coverage policy for data collection and comparison."""
+"""Baseline policies for data collection and controlled comparisons."""
 
 from collections import deque
 
-from aster.environment.types import Action, Position, StepResult, WorkshopLayout
+from aster.environment.types import Action, Observation, Position, StepResult, WorkshopLayout
 from aster.environment.workshop import Workshop
 
 _MOVE_TO_POSITION = {
@@ -11,6 +11,25 @@ _MOVE_TO_POSITION = {
     (1, 0): Action.MOVE_EAST,
     (-1, 0): Action.MOVE_WEST,
 }
+
+
+def choose_reactive_action(observation: Observation) -> Action:
+    """Move toward the target while ignoring state-changing objects.
+
+    This baseline never picks up keys and never operates switches or
+    doors; it plans as if the gate were already passable. Gated tasks are
+    therefore unsolvable for it, which isolates the value of modeling
+    state-changing objects.
+    """
+    if observation.agent == observation.target:
+        return Action.WAIT
+    path = _path(
+        observation,
+        observation.agent,
+        {observation.target},
+        gate_open=True,
+    )
+    return path[0] if path else Action.WAIT
 
 
 def collect_expert_episode(layout: WorkshopLayout) -> list[StepResult]:
@@ -41,7 +60,7 @@ def collect_expert_episode(layout: WorkshopLayout) -> list[StepResult]:
 
 
 def _path(
-    layout: WorkshopLayout,
+    geometry: WorkshopLayout | Observation,
     start: Position,
     goals: set[Position],
     gate_open: bool,
@@ -54,7 +73,7 @@ def _path(
         if current in goals:
             return _reconstruct_path(current, previous)
         for neighbor, action in _neighbors_with_actions(current):
-            if neighbor in previous or not _is_passable(layout, neighbor, gate_open):
+            if neighbor in previous or not _is_passable(geometry, neighbor, gate_open):
                 continue
             previous[neighbor] = (current, action)
             frontier.append(neighbor)
@@ -86,12 +105,16 @@ def _reconstruct_path(
     return actions
 
 
-def _is_passable(layout: WorkshopLayout, position: Position, gate_open: bool) -> bool:
-    if not (0 <= position.x < layout.width and 0 <= position.y < layout.height):
+def _is_passable(
+    geometry: WorkshopLayout | Observation,
+    position: Position,
+    gate_open: bool,
+) -> bool:
+    if not (0 <= position.x < geometry.width and 0 <= position.y < geometry.height):
         return False
-    if position in layout.walls:
+    if position in geometry.walls:
         return False
-    return position != layout.gate or gate_open
+    return position != geometry.gate or gate_open
 
 
 def _neighbors(position: Position) -> list[Position]:
