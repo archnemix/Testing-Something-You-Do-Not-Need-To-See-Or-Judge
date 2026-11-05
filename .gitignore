@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.aster/
+memory.json
+runs/
+*.pt

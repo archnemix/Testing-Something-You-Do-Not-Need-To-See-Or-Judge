@@ -1,0 +1,15 @@
+{
+  "seed": 17,
+  "seed_count": 60,
+  "random_episodes_per_layout": 2,
+  "max_steps": 64,
+  "train_fraction": 0.7,
+  "validation_fraction": 0.15,
+  "epochs": 40,
+  "batch_size": 128,
+  "hidden_size": 128,
+  "learning_rate": 0.001,
+  "patience": 6,
+  "device": "cpu",
+  "output_dir": "runs"
+}

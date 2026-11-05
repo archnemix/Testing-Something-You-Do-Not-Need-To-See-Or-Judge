@@ -1,0 +1,53 @@
+name: Symbolic checks
+
+on:
+  push:
+    paths:
+      - scripts/run-github-checks
+      - .github/workflows/symbolic-check.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare repository log
+        run: |
+          mkdir -p action-output
+          printf 'Run: %s\nCommit: %s\n\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > action-output/run.log
+      - name: Install project
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pip install -e . 2>&1 | tee -a action-output/run.log
+      - name: Run tests
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee -a action-output/run.log
+      - name: Commit run log to the triggering branch
+        if: always()
+        shell: bash
+        run: |
+          if [[ ! -f action-output/run.log ]]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add action-output/run.log
+          if git diff --cached --quiet; then
+            echo "Run log is unchanged; no commit needed."
+            exit 0
+          fi
+          git commit -m "Record symbolic check output"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
