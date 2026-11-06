@@ -1,11 +1,11 @@
-"""Coordinates perception, memory, symbolic reasoning, and response selection."""
+"""Coordinates perception, memory, associative retrieval, and responses."""
 
 from pathlib import Path
 
 from aster.language import parse_input
 from aster.memory import MemoryStore
 from aster.models import InputKind
-from aster.reasoning import answers_for
+from aster.reasoning import answers_with_hops_for
 
 
 class Aster:
@@ -14,6 +14,7 @@ class Aster:
 
     def respond(self, text: str) -> str:
         parsed = parse_input(text)
+        self.memory.network.tick(1)  # a moment passes: idle pathways fade a little
         if parsed.kind is InputKind.QUIT:
             return "Goodbye."
         if parsed.kind is InputKind.HELP:
@@ -30,13 +31,11 @@ class Aster:
             return "I already have that fact."
         if parsed.kind is InputKind.QUESTION and parsed.subject and parsed.relation:
             self.memory.record_input(text)
-            values = answers_for(parsed.subject, parsed.relation, self.memory)
-            if not values:
+            results = answers_with_hops_for(parsed.subject, parsed.relation, self.memory)
+            if not results:
                 return f"I don't have a stored answer for {parsed.subject} {parsed.relation} yet."
-            direct = self.memory.find_facts(parsed.subject, parsed.relation)
-            direct_values = {fact.object.casefold() for fact in direct}
-            direct_answers = [value for value in values if value.casefold() in direct_values]
-            inferred_answers = [value for value in values if value.casefold() not in direct_values]
+            direct_answers = [label for label, hop in results if hop == 1]
+            inferred_answers = [label for label, hop in results if hop > 1]
             sentences = [f"{parsed.subject} {parsed.relation} {value}." for value in direct_answers]
             for value in inferred_answers:
                 sentences.append(
@@ -48,9 +47,9 @@ class Aster:
             return f"Goal recorded: {parsed.subject}."
         if parsed.kind is InputKind.STATUS:
             active_goals = [goal.description for goal in self.memory.goals if goal.active]
+            fact_count = self.memory.known_fact_count()
             if not active_goals:
-                return f"No active goal. I have {len(self.memory.facts)} stored fact(s)."
-            fact_count = len(self.memory.facts)
+                return f"No active goal. I have {fact_count} stored fact(s)."
             return f"Active goal: {active_goals[0]}. I have {fact_count} stored fact(s)."
         self.memory.record_input(text)
         return (

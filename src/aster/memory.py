@@ -1,10 +1,19 @@
-"""Persistent long-term facts plus a bounded, recent working-memory window."""
+"""Long-term memory: a plastic neuron network, plus goals and a small
+recent-conversation window.
+
+Facts are not stored in a list or dictionary. Telling a fact strengthens
+pathways between neuron ensembles in `PlasticNetwork`; asking spreads
+activation along those pathways. Repeated use strengthens pathways further
+and idle time weakens them. Goals and the bounded episode window are plain
+persistent state (like a small notepad), not part of the learned substrate.
+"""
 
 import json
 from collections import deque
 from pathlib import Path
 from typing import Any
 
+from aster.cognition.plastic import PlasticNetwork
 from aster.models import Episode, Fact, Goal
 
 
@@ -14,29 +23,26 @@ class MemoryStore:
             raise ValueError("working_capacity must be at least 1")
         self.path = path
         self.working_capacity = working_capacity
-        self.facts: list[Fact] = []
+        self.network = PlasticNetwork()
         self.goals: list[Goal] = []
         self.episodes: deque[Episode] = deque(maxlen=working_capacity)
         if path is not None and path.exists():
             self._load()
 
     def remember_fact(self, fact: Fact) -> bool:
-        """Store a fact once; return whether the store changed."""
-        if any(existing.key() == fact.key() for existing in self.facts):
-            return False
-        self.facts.append(fact)
-        self._record(f"{fact.subject} {fact.relation} {fact.object}", "fact")
-        self.save()
-        return True
+        """Tell the network a fact; return whether it counts as new knowledge.
 
-    def find_facts(self, subject: str, relation: str) -> list[Fact]:
-        subject_key = subject.casefold()
-        relation_key = relation.casefold()
-        return [
-            fact
-            for fact in self.facts
-            if fact.subject.casefold() == subject_key and fact.relation.casefold() == relation_key
-        ]
+        Repetition is recognized (and still strengthens the pathway), but
+        only new knowledge is recorded in the episode window.
+        """
+        is_new = self.network.observe(fact.subject, fact.relation, fact.object)
+        if is_new:
+            self._record(f"{fact.subject} {fact.relation} {fact.object}", "fact")
+        self.save()
+        return is_new
+
+    def known_fact_count(self) -> int:
+        return self.network.known_fact_count()
 
     def set_goal(self, description: str) -> None:
         self.goals = [Goal(description, active=True)]
@@ -52,11 +58,8 @@ class MemoryStore:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
-            "version": 1,
-            "facts": [
-                {"subject": fact.subject, "relation": fact.relation, "object": fact.object}
-                for fact in self.facts
-            ],
+            "version": 2,
+            "network": self.network.snapshot(),
             "goals": [
                 {"description": goal.description, "active": goal.active}
                 for goal in self.goals
@@ -77,10 +80,19 @@ class MemoryStore:
             data: Any = json.loads(self.path.read_text(encoding="utf-8"))
             if not isinstance(data, dict):
                 raise ValueError("memory file must contain a JSON object")
-            if data.get("version") != 1:
+            version = data.get("version")
+            if version == 2:
+                self.network.restore(data.get("network") or {})
+            elif version == 1:
+                self._consolidate_old_facts(data)
+            else:
                 raise ValueError("unsupported memory file version")
-            self.facts = [Fact(**item) for item in data.get("facts", [])]
             self.goals = [Goal(**item) for item in data.get("goals", [])]
             self.episodes.extend(Episode(**item) for item in data.get("episodes", []))
         except (json.JSONDecodeError, TypeError, KeyError) as error:
             raise ValueError(f"Cannot read Aster memory at {self.path}: {error}") from error
+
+    def _consolidate_old_facts(self, data: dict[str, Any]) -> None:
+        """Replay version-1 fact lists through the network (like re-telling)."""
+        for item in data.get("facts", []):
+            self.network.observe(item["subject"], item["relation"], item["object"])

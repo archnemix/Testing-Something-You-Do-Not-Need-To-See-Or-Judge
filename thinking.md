@@ -1,5 +1,13 @@
 # Engineering journal
 
+## 2026-11-06 — The memory is now neurons, not a dictionary
+
+The directive was unambiguous: the system must be brain-like -- neurons and synapses whose strengths carry knowledge, learning on every interaction (telling nudges weights immediately), use-dependent plasticity (used paths strengthen, unused fade), no context window, no padding, structural growth and pruning, and answers formed by neurons firing rather than table lookups. The fact dictionary was explicitly rejected.
+
+I built `PlasticNetwork` and moved the conversation brain onto it. Design decisions worth recording: recognition works by feature-overlap of spellings (there is deliberately no token-to-id dictionary; even recognizing "Ada" again is a perceptual act); knowledge lives in directed synapses gated by the relation ensemble, so `is` and `has` never cross-talk; one telling lands a pathway in the "known" range and repetition pushes it toward saturation while idle moments decay everything slowly -- learning per telling is much larger than decay per moment, so the user's rule (use strengthens, disuse weakens) falls out naturally. Answers form by activity spreading a few hops along gated pathways with the cue excluded, which gives transitive `is` for free and defuses cycles without any visited-set bookkeeping.
+
+All previous behavioral contracts held on the new substrate (50 tests): the transitive test that used to exercise a BFS rule now exercises two-hop spreading. The honest limits are written down in `brain-plasticity.md`: the reply frame is still a fixed template and the parser is still written code (Stage 2: settling word pools form sentences), and the world model still learns in offline batches (Stage 3: continual use-dependent nudging during play).
+
 ## 2026-11-06 — Architecture scaling study: what 5M/10M parameters buy versus a Transformer
 
 The question was what the learned part of the system actually is, and how it behaves when scaled to millions of parameters against a Transformer on the same task. I built `aster.scaling`: six cells ({MLP, cell-token Transformer} x {tiny, ~5M, ~10M}) on the identical Workshop splits and one shared optimizer/stopping policy. The 2-CPU sandbox kept OOM-killing the large Transformer cells (heap fragmentation crossed the memory ceiling twice mid-training), so the study moved to the GitHub Actions runner via the agreed marker-workflow pattern; three parallel job groups trained the cells and a collect job merged the reports and committed them back. Per-epoch validation now reuses prebuilt tensors, and the study frees raw Python rows before training after adding a regression test proving the pretensorized path is equivalent.

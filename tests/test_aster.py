@@ -26,7 +26,7 @@ class MemoryTests(unittest.TestCase):
         memory = MemoryStore()
         self.assertTrue(memory.remember_fact(Fact("Ada", "is", "a mathematician")))
         self.assertFalse(memory.remember_fact(Fact("ada", "IS", "A MATHEMATICIAN")))
-        self.assertEqual(len(memory.facts), 1)
+        self.assertEqual(memory.known_fact_count(), 1)
 
     def test_round_trips_persistent_memory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -36,7 +36,7 @@ class MemoryTests(unittest.TestCase):
             memory.set_goal("learn about geometry")
 
             restored = MemoryStore(path)
-            self.assertEqual(restored.facts, memory.facts)
+            self.assertEqual(restored.network.snapshot(), memory.network.snapshot())
             self.assertEqual(restored.goals, memory.goals)
 
     def test_restart_recovers_goal_history_and_facts(self) -> None:
