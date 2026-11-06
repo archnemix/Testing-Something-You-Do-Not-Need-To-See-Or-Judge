@@ -14,5 +14,6 @@
   "output_dir": "runs",
   "evaluation_seed_start": 100,
   "evaluation_seed_count": 200,
-  "policy_aggregation_rounds": 2
+  "policy_aggregation_rounds": 2,
+  "uncertainty_ensemble_size": 5
 }

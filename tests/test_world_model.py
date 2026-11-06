@@ -19,6 +19,7 @@ if TORCH_AVAILABLE:
     from aster.environment.baselines import choose_reactive_action
     from aster.training.baselines import evaluate_frequency_baseline
     from aster.training.cli import train_from_config
+    from aster.training.ensemble import evaluate_uncertainty, train_uncertainty_ensemble
     from aster.training.policy import collect_aggregation_examples
     from aster.training.engine import (
         TrainingSettings,
@@ -131,6 +132,62 @@ class WorldModelTests(unittest.TestCase):
         self.assertTrue(all(0 <= row.action < len(Action) for row in rows))
         self.assertEqual(len({(row.state, row.action) for row in rows}), len(rows))
 
+    def test_uncertainty_ensemble_scores_familiar_and_unfamiliar_sets(self) -> None:
+        examples = collect_examples(range(6), random_episodes_per_layout=1, max_steps=24)
+        splits = split_by_layout(examples, seed=3)
+        settings = TrainingSettings(
+            epochs=2,
+            batch_size=32,
+            hidden_size=16,
+            patience=2,
+            seed=3,
+        )
+        base = train_world_model(splits.train, splits.validation, settings)
+        members = train_uncertainty_ensemble(
+            base.model,
+            splits.train,
+            splits.validation,
+            settings,
+            2,
+        )
+        self.assertEqual(len(members), 2)
+        metrics = evaluate_uncertainty(members, splits.train, splits.test)
+        for name in (
+            "familiar_mean_uncertainty",
+            "unfamiliar_mean_uncertainty",
+            "uncertainty_shift_ratio",
+            "error_auroc",
+            "error_auroc_defined",
+            "confidently_wrong_rate",
+        ):
+            self.assertIn(name, metrics)
+        self.assertGreaterEqual(metrics["familiar_mean_uncertainty"], 0.0)
+        self.assertGreater(metrics["uncertainty_shift_ratio"], 0.0)
+        self.assertGreaterEqual(metrics["error_auroc"], 0.0)
+        self.assertLessEqual(metrics["error_auroc"], 1.0)
+        self.assertGreaterEqual(metrics["confidently_wrong_rate"], 0.0)
+        self.assertLessEqual(metrics["confidently_wrong_rate"], 1.0)
+
+    def test_error_flags_use_logits_when_probabilities_saturate(self) -> None:
+        from aster.training.ensemble import _error_flags
+
+        feature_size = 214
+        true_agent_cell = 5
+        wrong_tie_cell = 3
+        target = torch.zeros(1, feature_size)
+        target[0, true_agent_cell * 6 + 1] = 1.0
+        mean_logits = torch.zeros(1, feature_size)
+        mean_logits[0, true_agent_cell * 6 + 1] = 30.0
+        mean_logits[0, wrong_tie_cell * 6 + 1] = 20.0
+        mean_prediction = torch.sigmoid(mean_logits)
+        self.assertEqual(
+            mean_prediction[0, true_agent_cell * 6 + 1].item(),
+            mean_prediction[0, wrong_tie_cell * 6 + 1].item(),
+            "both confident cells must saturate to the same probability",
+        )
+        errors = _error_flags(mean_prediction, mean_logits, target)
+        self.assertFalse(bool(errors[0]))
+
     def test_configured_run_saves_model_data_and_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             config_path = Path(directory) / "config.json"
@@ -149,6 +206,7 @@ class WorldModelTests(unittest.TestCase):
                         "evaluation_seed_start": 20,
                         "evaluation_seed_count": 12,
                         "policy_aggregation_rounds": 1,
+                        "uncertainty_ensemble_size": 2,
                     }
                 ),
                 encoding="utf-8",
@@ -185,6 +243,9 @@ class WorldModelTests(unittest.TestCase):
             self.assertEqual(metrics["policy_aggregation_rounds"], 1.0)
             self.assertEqual(len(metrics["policy_aggregation_examples_per_round"]), 1)
             self.assertIn("Dataset aggregation: 1", metrics["behavior_cloning_description"])
+            self.assertIn("AUROC", metrics["uncertainty_gate_rule"])
+            self.assertIn("confidently_wrong_rate", metrics["uncertainty_metrics"])
+            self.assertIn("uncertainty_gate_passed", metrics)
             large_sample = metrics["large_sample_metrics"]
             self.assertGreater(large_sample["tasks"], 0.0)
             self.assertIn("oracle_metrics", large_sample)

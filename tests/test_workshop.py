@@ -8,6 +8,7 @@ from aster.environment import (
     WorkshopLayout,
     collect_expert_episode,
     encode_observation,
+    expert_action,
     make_workshop_layout,
 )
 from aster.training.data import layout_id
@@ -106,6 +107,37 @@ class WorkshopTests(unittest.TestCase):
         restored.step(Action.MOVE_NORTH)
         self.assertEqual(original.observe(), observation)
         self.assertEqual(restored.steps, 1)
+
+    def test_restart_recovery_preserves_progress_at_every_interruption(self) -> None:
+        for gate_kind in GateKind:
+            for seed in range(4):
+                with self.subTest(gate_kind=gate_kind, seed=seed):
+                    layout = make_workshop_layout(gate_kind, seed=seed)
+                    reference = Workshop(layout)
+                    prefix: list[Action] = []
+                    while not reference.done:
+                        prefix.append(expert_action(reference.observe()))
+                        reference.step(prefix[-1])
+
+                    for interruption in range(len(prefix)):
+                        live = Workshop(layout)
+                        for action in prefix[:interruption]:
+                            live.step(action)
+                        snapshot = live.observe()
+                        restored = Workshop.from_observation(layout, snapshot)
+                        self.assertEqual(restored.observe(), snapshot)
+                        self.assertEqual(restored.has_key, snapshot.has_key)
+                        self.assertEqual(restored.gate_open, snapshot.gate_open)
+                        self.assertEqual(restored.steps, snapshot.steps)
+
+                        while not restored.done:
+                            restored.step(expert_action(restored.observe()))
+                        self.assertEqual(
+                            restored.agent,
+                            reference.agent,
+                            "restart changed the outcome",
+                        )
+                        self.assertEqual(restored.steps, reference.steps)
 
     def test_rejects_too_small_generated_maps(self) -> None:
         with self.assertRaisesRegex(ValueError, "width >= 5"):

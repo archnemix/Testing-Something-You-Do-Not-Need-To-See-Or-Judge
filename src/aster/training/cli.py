@@ -33,6 +33,7 @@ from aster.training.engine import (
     evaluate_world_model,
     train_world_model,
 )
+from aster.training.ensemble import evaluate_uncertainty, train_uncertainty_ensemble
 from aster.training.policy import (
     collect_aggregation_examples,
     evaluate_policy_examples,
@@ -57,6 +58,7 @@ _DEFAULT_CONFIG = {
     "evaluation_seed_start": 100,
     "evaluation_seed_count": 200,
     "policy_aggregation_rounds": 0,
+    "uncertainty_ensemble_size": 5,
 }
 
 _FREQUENCY_GATE_ACCURACIES = (
@@ -140,6 +142,29 @@ def train_from_config(config_path: Path, seed_override: int | None = None) -> Pa
     test_metrics = evaluate_world_model(result.model, splits.test)
     frequency_baseline_metrics = evaluate_frequency_baseline(splits.train, splits.test)
     rollout_metrics = evaluate_rollout_error(result.model, splits.test)
+    uncertainty_metrics: dict[str, Any] = {
+        "note": "uncertainty evaluation disabled (uncertainty_ensemble_size < 2)"
+    }
+    uncertainty_gate_passed = False
+    ensemble_size = int(config["uncertainty_ensemble_size"])
+    if ensemble_size >= 2:
+        members = train_uncertainty_ensemble(
+            result.model,
+            splits.train,
+            splits.validation,
+            settings,
+            ensemble_size,
+        )
+        uncertainty_metrics = evaluate_uncertainty(
+            members,
+            splits.train,
+            splits.test,
+        )
+        uncertainty_gate_passed = (
+            uncertainty_metrics["error_auroc_defined"] == 1.0
+            and uncertainty_metrics["uncertainty_shift_ratio"] > 1.0
+            and uncertainty_metrics["error_auroc"] >= 0.7
+        )
     controller_metrics = evaluate_controller_layouts(
         result.model,
         splits.test_layouts,
@@ -257,6 +282,15 @@ def train_from_config(config_path: Path, seed_override: int | None = None) -> Pa
         ),
         "frequency_baseline_gate_passed": frequency_baseline_gate_passed,
         "rollout_error_metrics": rollout_metrics,
+        "uncertainty_metrics": uncertainty_metrics,
+        "uncertainty_gate_rule": (
+            "Gate passes when committee disagreement is strictly higher on "
+            "unfamiliar (unseen-layout) states than on familiar training states, "
+            "and uncertainty ranks errors with AUROC >= 0.70. confidently_wrong_rate "
+            "counts wrong predictions that are surer than the familiar 25th "
+            "percentile; the 0.70 threshold is provisional."
+        ),
+        "uncertainty_gate_passed": uncertainty_gate_passed,
         "closed_loop_metrics": controller_metrics,
         "controller_description": (
             "Hybrid reference: explicit Workshop affordances and goal costs are combined "
@@ -412,4 +446,6 @@ def _read_config(path: Path) -> dict[str, Any]:
         raise ValueError("random_episodes_per_layout cannot be negative")
     if int(config["policy_aggregation_rounds"]) < 0:
         raise ValueError("policy_aggregation_rounds cannot be negative")
+    if int(config["uncertainty_ensemble_size"]) < 0:
+        raise ValueError("uncertainty_ensemble_size cannot be negative")
     return config

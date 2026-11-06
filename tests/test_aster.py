@@ -39,6 +39,29 @@ class MemoryTests(unittest.TestCase):
             self.assertEqual(restored.facts, memory.facts)
             self.assertEqual(restored.goals, memory.goals)
 
+    def test_restart_recovers_goal_history_and_facts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "memory.json"
+            agent = Aster(memory_path=path)
+            agent.respond("Ada is a mathematician.")
+            agent.respond("goal: learn about geometry")
+            agent.respond("what is Ada?")
+            agent.respond("what is Grace?")
+
+            restarted = Aster(memory_path=path)
+            self.assertEqual(
+                restarted.respond("what is Ada?"),
+                "Ada is a mathematician.",
+            )
+            status = restarted.respond("status")
+            self.assertIn("learn about geometry", status)
+            history = [episode.text for episode in restarted.memory.episodes]
+            self.assertIn("learn about geometry", history)
+            self.assertIn("what is Grace?", history)
+            kinds = [episode.kind for episode in restarted.memory.episodes]
+            self.assertIn("fact", kinds)
+            self.assertIn("goal", kinds)
+
     def test_working_memory_is_bounded(self) -> None:
         memory = MemoryStore(working_capacity=2)
         memory.record_input("one")
