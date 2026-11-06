@@ -8,7 +8,15 @@ from torch import Tensor, nn
 from torch.nn import functional
 
 from aster.cognition.policy import ActionPolicy
-from aster.training.data import TransitionExample
+from aster.environment import (
+    Action,
+    GateKind,
+    Workshop,
+    encode_observation,
+    expert_action,
+    make_workshop_layout,
+)
+from aster.training.data import TransitionExample, layout_id
 from aster.training.engine import TrainingSettings
 
 
@@ -111,7 +119,52 @@ def evaluate_policy_examples(
 def _expert_examples(
     examples: tuple[TransitionExample, ...],
 ) -> tuple[TransitionExample, ...]:
-    return tuple(row for row in examples if row.episode_kind == "expert")
+    return tuple(row for row in examples if row.episode_kind.startswith("expert"))
+
+
+def collect_aggregation_examples(
+    policy: ActionPolicy,
+    cases: tuple[tuple[int, str], ...],
+    max_steps: int = 64,
+) -> tuple[TransitionExample, ...]:
+    """Dataset aggregation (DAgger): label policy-visited states with the expert.
+
+    The acting policy during collection is the learned policy itself, so
+    the states are the ones it actually visits; the privileged rule-aware
+    expert supplies only the action label. Execution and evaluation never
+    consult the expert.
+    """
+    if not cases:
+        raise ValueError("at least one aggregation layout is required")
+    collected: dict[tuple[tuple[float, ...], int], TransitionExample] = {}
+    for seed, gate_name in cases:
+        gate = GateKind(gate_name)
+        layout = make_workshop_layout(gate, seed=seed, max_steps=max_steps)
+        layout_key = layout_id(layout)
+        environment = Workshop(layout)
+        while not environment.done:
+            observation = environment.observe()
+            state = encode_observation(observation)
+            label = expert_action(observation)
+            result = environment.step(policy.choose(observation))
+            action_id = tuple(Action).index(label)
+            collected.setdefault(
+                (state, action_id),
+                TransitionExample(
+                    layout_id=layout_key,
+                    state=state,
+                    action=action_id,
+                    next_state=encode_observation(result.observation),
+                    reward=result.reward,
+                    done=result.done,
+                    invalid=result.invalid,
+                    seed=seed,
+                    gate_kind=gate.value,
+                    episode_kind="expert-aggregation",
+                    step=observation.steps,
+                ),
+            )
+    return tuple(collected.values())
 
 
 def _to_tensors(

@@ -2,7 +2,14 @@
 
 from collections import deque
 
-from aster.environment.types import Action, Observation, Position, StepResult, WorkshopLayout
+from aster.environment.types import (
+    Action,
+    GateKind,
+    Observation,
+    Position,
+    StepResult,
+    WorkshopLayout,
+)
 from aster.environment.workshop import Workshop
 
 _MOVE_TO_POSITION = {
@@ -30,6 +37,65 @@ def choose_reactive_action(observation: Observation) -> Action:
         gate_open=True,
     )
     return path[0] if path else Action.WAIT
+
+
+def expert_action(observation: Observation) -> Action:
+    """First action of the rule-aware plan from any recorded state.
+
+    Used only to label imitation data (including dataset aggregation on
+    policy-visited states). It is never the acting policy at evaluation.
+    """
+    if observation.agent == observation.target:
+        return Action.WAIT
+    if observation.gate_open:
+        return _first_move(observation, {observation.target}, gate_open=True)
+
+    if observation.gate_kind is GateKind.DOOR:
+        if not observation.has_key:
+            if observation.key == observation.agent and observation.key is not None:
+                return Action.PICK_UP
+            if observation.key is None:
+                return Action.WAIT
+            return _first_move(observation, {observation.key}, gate_open=False)
+        if _adjacent(observation.agent, observation.gate):
+            return Action.INTERACT
+        return _first_move(
+            observation,
+            _passable_gate_sides(observation),
+            gate_open=False,
+        )
+
+    assert observation.switch is not None
+    if observation.agent == observation.switch:
+        return Action.INTERACT
+    return _first_move(observation, {observation.switch}, gate_open=False)
+
+
+def _first_move(
+    observation: Observation,
+    goals: set[Position],
+    gate_open: bool,
+) -> Action:
+    try:
+        path = _path(observation, observation.agent, goals, gate_open)
+    except ValueError:
+        try:
+            path = _path(observation, observation.agent, goals, gate_open=True)
+        except ValueError:
+            return Action.WAIT
+    return path[0] if path else Action.WAIT
+
+
+def _passable_gate_sides(observation: Observation) -> set[Position]:
+    return {
+        side
+        for side in _neighbors(observation.gate)
+        if _is_passable(observation, side, gate_open=False)
+    }
+
+
+def _adjacent(left: Position, right: Position) -> bool:
+    return abs(left.x - right.x) + abs(left.y - right.y) == 1
 
 
 def collect_expert_episode(layout: WorkshopLayout) -> list[StepResult]:

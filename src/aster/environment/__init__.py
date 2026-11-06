@@ -1,7 +1,11 @@
 """Small deterministic environments used to train and evaluate Aster."""
 
 from aster.environment.affordances import available_actions
-from aster.environment.baselines import choose_reactive_action, collect_expert_episode
+from aster.environment.baselines import (
+    choose_reactive_action,
+    collect_expert_episode,
+    expert_action,
+)
 from aster.environment.encoding import encode_observation
 from aster.environment.generation import LAYOUT_SPACE_VERSION, make_workshop_layout
 from aster.environment.types import (
@@ -22,6 +26,7 @@ __all__ = [
     "Observation",
     "choose_reactive_action",
     "collect_expert_episode",
+    "expert_action",
     "encode_observation",
     "Position",
     "StepResult",

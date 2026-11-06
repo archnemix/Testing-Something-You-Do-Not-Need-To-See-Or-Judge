@@ -131,6 +131,14 @@ def _evaluate(
     randomizer: random.Random | None = None,
     max_steps: int = 64,
 ) -> dict[str, float]:
+    """Evaluate a policy and report success plus diagnostic failure counts.
+
+    The failure counts partition non-success episodes by how far the
+    episode got: key never collected (door), key collected but gate never
+    opened (door), gate never opened (bridge), gate opened but the crossing
+    never happened, and crossing happened but the target was not reached.
+    They describe behavior; they do not measure planning competence.
+    """
     if not cases:
         raise ValueError("at least one evaluation layout is required")
     rng = randomizer or random.Random(0)
@@ -143,22 +151,60 @@ def _evaluate(
         gate.value: {"tasks": 0, "successes": 0}
         for gate in GateKind
     }
+    failure_counts = {
+        "failure_key_never_collected": 0,
+        "failure_key_no_open": 0,
+        "failure_gate_never_opened": 0,
+        "failure_opened_never_crossed": 0,
+        "failure_crossed_never_reached": 0,
+        "episodes_gate_reclosed": 0,
+        "episodes_with_invalid_actions": 0,
+    }
 
     for seed, gate_name in cases:
         gate = GateKind(gate_name)
         environment = Workshop(make_workshop_layout(gate, seed=seed, max_steps=max_steps))
+        ever_has_key = False
+        ever_opened = False
+        ever_crossed = False
+        reclosed = False
+        episode_invalid = False
         while not environment.done:
             action = choose(environment, rng)
             result = environment.step(action)
             invalid_actions += int(result.invalid)
+            episode_invalid = episode_invalid or result.invalid
             total_steps += 1
+            observation = result.observation
+            ever_has_key = ever_has_key or observation.has_key
+            if observation.gate_open:
+                ever_opened = True
+            elif ever_opened:
+                reclosed = True
+            ever_crossed = ever_crossed or (
+                observation.agent.x > observation.gate.x
+            )
         task_count += 1
         gate_metrics = by_gate[gate.value]
         gate_metrics["tasks"] += 1
+        if episode_invalid:
+            failure_counts["episodes_with_invalid_actions"] += 1
+        if reclosed:
+            failure_counts["episodes_gate_reclosed"] += 1
         if environment.agent == environment.layout.target:
             successes += 1
             successful_steps += environment.steps
             gate_metrics["successes"] += 1
+        elif gate is GateKind.DOOR and not ever_has_key:
+            failure_counts["failure_key_never_collected"] += 1
+        elif gate is GateKind.DOOR and not ever_opened:
+            failure_counts["failure_key_no_open"] += 1
+        elif gate is GateKind.BRIDGE and not ever_opened:
+            failure_counts["failure_gate_never_opened"] += 1
+        elif not ever_crossed:
+            failure_counts["failure_opened_never_crossed"] += 1
+        else:
+            failure_counts["failure_crossed_never_reached"] += 1
 
     metrics = {
         "tasks": float(task_count),
@@ -167,6 +213,7 @@ def _evaluate(
         "invalid_actions": float(invalid_actions),
         "mean_steps_on_success": successful_steps / successes if successes else 0.0,
         "total_steps": float(total_steps),
+        **{name: float(count) for name, count in failure_counts.items()},
     }
     for gate_name, gate_metrics in by_gate.items():
         metrics[f"{gate_name}_success_rate"] = (

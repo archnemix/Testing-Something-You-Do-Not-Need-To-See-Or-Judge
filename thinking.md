@@ -1,5 +1,15 @@
 # Engineering journal
 
+## 2026-11-06 — Failure analysis, multi-seed robustness, and dataset aggregation
+
+I stopped trusting the single-run policy number and added what the evaluation still lacked: diagnostic failure counts in closed-loop evaluation, a `--seed` override for robustness runs, and `scripts/aggregate-metrics` for cross-seed tables. Four behavior-cloning runs (seeds 17, 23, 41, 73) showed large variance — 3.3% to 14.8% success on the 338 unseen layouts — and seed 41 collapsed to near-random. The earlier "beats random" claim was real but fragile, and the bridge advantage was within noise. Reporting one run would have been misleading.
+
+The failure counts explained why: the dominant failure is never performing the subgoal interaction at all. Between 129 and 162 of 169 bridge episodes never touched the switch; door failures split between never taking the key and never opening. This is compounding-error, the known failure mode of behavior cloning: the policy rarely visits states near the subgoal during training, so it never learned what to do there.
+
+The standard fix is dataset aggregation (DAgger): let the policy roll out, label the states it actually visits with the privileged expert, retrain. I implemented it as `expert_action` (a state-aware rule-aware planner used only for labels) and `collect_aggregation_examples`; execution and evaluation never consult the expert, so the learned/symbolic distinction is preserved. Two aggregation rounds add roughly 4,000-5,000 labeled states each.
+
+Pooled over the same four seeds, aggregation lifted success from 10.5% to 25.4% (z = 16.7 vs random), door from 15.1% to 30.6%, and — the point of the exercise — bridge from 5.9% (noise) to 20.3% (z = 8.2). The worst seed lifted from 3.3% to 13.6%, and the failure bottleneck moved past the gate (bridge "never opened" fell from 129-162 to 39-118 of 169). None of this reaches the reliability gate (80% door / 60% bridge), so the policy stays experimental and play instructions stay withheld. The next honest targets are the remaining unmeasured gates — uncertainty calibration and interruption/restart recovery — and whatever the new failure distribution says is the current bottleneck (now partly "opened but never crossed").
+
 ## 2026-11-05 — Completed the evaluation protocol and expanded the layout space
 
 The evaluation protocol in `first-experiment.md` had named items that were never implemented: the most-common-outcome frequency baseline, the reactive baseline that ignores state-changing objects, rollout error at horizons 1/3/5/10, the oracle gap, and a sample of at least 100 seeded scenarios per family. I implemented all of them before drawing any further conclusions.

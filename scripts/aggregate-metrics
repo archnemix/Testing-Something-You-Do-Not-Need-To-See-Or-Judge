@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Summarize one or more training runs for cross-seed robustness checks.
+
+Usage: scripts/aggregate-metrics runs/workshop-* [runs/workshop-* ...]
+
+Reads each run's metrics.json and prints the gate outcomes, large-sample
+success rates, and failure breakdowns side by side so that a single-run
+result is never mistaken for a robust one.
+"""
+
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+
+def main(arguments: list[str]) -> int:
+    if not arguments:
+        print(__doc__)
+        return 2
+    rows = []
+    for name in arguments:
+        metrics_path = Path(name) / "metrics.json"
+        try:
+            rows.append((name, json.loads(metrics_path.read_text(encoding="utf-8"))))
+        except (OSError, json.JSONDecodeError) as error:
+            print(f"cannot read {metrics_path}: {error}", file=sys.stderr)
+            return 1
+    _print_table(rows)
+    return 0
+
+
+def _print_table(rows: list[tuple[str, dict[str, Any]]]) -> None:
+    print(f"{'run':<44} {'learned':>8} {'random':>8} {'reactive':>9} {'oracle':>8}")
+    for name, metrics in rows:
+        large = metrics["large_sample_metrics"]
+        print(
+            f"{_short(name):<44} "
+            f"{large['learned_policy_metrics']['success_rate']:>8.3f} "
+            f"{large['random_legal_policy_metrics']['success_rate']:>8.3f} "
+            f"{large['reactive_policy_metrics']['success_rate']:>9.3f} "
+            f"{large['oracle_metrics']['success_rate']:>8.3f}"
+        )
+    print()
+    print(f"{'run':<44} {'door':>8} {'bridge':>8} {'beats_base':>10} {'freq_gate':>10}")
+    for name, metrics in rows:
+        large = metrics["large_sample_metrics"]
+        learned = large["learned_policy_metrics"]
+        print(
+            f"{_short(name):<44} "
+            f"{learned['door_success_rate']:>8.3f} "
+            f"{learned['bridge_success_rate']:>8.3f} "
+            f"{str(metrics['learned_policy_beats_random_and_reactive']):>10} "
+            f"{str(metrics['frequency_baseline_gate_passed']):>10}"
+        )
+    print()
+    print("learned-policy failure counts (large sample)")
+    print(
+        f"{'run':<44} {'no_key':>7} {'key_no_open':>11} {'no_open':>8} "
+        f"{'no_cross':>9} {'cross_fail':>10} {'reclosed':>9}"
+    )
+    for name, metrics in rows:
+        learned = metrics["large_sample_metrics"]["learned_policy_metrics"]
+        print(
+            f"{_short(name):<44} "
+            f"{learned['failure_key_never_collected']:>7.0f} "
+            f"{learned['failure_key_no_open']:>11.0f} "
+            f"{learned['failure_gate_never_opened']:>8.0f} "
+            f"{learned['failure_opened_never_crossed']:>9.0f} "
+            f"{learned['failure_crossed_never_reached']:>10.0f} "
+            f"{learned['episodes_gate_reclosed']:>9.0f}"
+        )
+
+
+def _short(name: str) -> str:
+    return Path(name).name
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

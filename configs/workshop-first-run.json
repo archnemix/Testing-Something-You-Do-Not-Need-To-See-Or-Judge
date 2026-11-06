@@ -11,5 +11,8 @@
   "learning_rate": 0.001,
   "patience": 6,
   "device": "cpu",
-  "output_dir": "runs"
+  "output_dir": "runs",
+  "evaluation_seed_start": 100,
+  "evaluation_seed_count": 200,
+  "policy_aggregation_rounds": 2
 }

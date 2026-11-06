@@ -12,12 +12,14 @@ if TORCH_AVAILABLE:
     import torch
 
     from aster.cognition.evaluation import evaluate_controller
+    from aster.cognition.policy import ActionPolicy
     from aster.cognition.policy_evaluation import evaluate_reactive_policy_layouts
     from aster.cognition.world_model import TransitionModel
-    from aster.environment import Action, GateKind, Workshop, make_workshop_layout
+    from aster.environment import Action, GateKind, Workshop, expert_action, make_workshop_layout
     from aster.environment.baselines import choose_reactive_action
     from aster.training.baselines import evaluate_frequency_baseline
     from aster.training.cli import train_from_config
+    from aster.training.policy import collect_aggregation_examples
     from aster.training.engine import (
         TrainingSettings,
         evaluate_rollout_error,
@@ -103,6 +105,31 @@ class WorldModelTests(unittest.TestCase):
             max_steps=24,
         )
         self.assertEqual(metrics["success_rate"], 0.0)
+        self.assertEqual(metrics["failure_key_never_collected"], 3.0)
+        self.assertEqual(metrics["failure_gate_never_opened"], 3.0)
+        self.assertEqual(metrics["failure_opened_never_crossed"], 0.0)
+
+    def test_expert_action_solves_from_reachable_states(self) -> None:
+        for gate in GateKind:
+            for seed in range(4):
+                layout = make_workshop_layout(gate, seed=seed)
+                environment = Workshop(layout)
+                for _ in range(3):
+                    if environment.done:
+                        break
+                    environment.step(expert_action(environment.observe()))
+                while not environment.done:
+                    environment.step(expert_action(environment.observe()))
+                self.assertEqual(environment.agent, environment.layout.target)
+
+    def test_aggregation_labels_policy_visited_states(self) -> None:
+        policy = ActionPolicy(feature_size=214, hidden_size=16)
+        cases = tuple((seed, gate.value) for gate in GateKind for seed in range(2))
+        rows = collect_aggregation_examples(policy, cases, max_steps=24)
+        self.assertTrue(rows)
+        self.assertTrue(all(row.episode_kind == "expert-aggregation" for row in rows))
+        self.assertTrue(all(0 <= row.action < len(Action) for row in rows))
+        self.assertEqual(len({(row.state, row.action) for row in rows}), len(rows))
 
     def test_configured_run_saves_model_data_and_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -121,11 +148,13 @@ class WorldModelTests(unittest.TestCase):
                         "output_dir": str(Path(directory) / "runs"),
                         "evaluation_seed_start": 20,
                         "evaluation_seed_count": 12,
+                        "policy_aggregation_rounds": 1,
                     }
                 ),
                 encoding="utf-8",
             )
-            run_dir = train_from_config(config_path)
+            run_dir = train_from_config(config_path, seed_override=5)
+            self.assertTrue(run_dir.name.endswith("-5"))
             self.assertTrue((run_dir / "best.pt").is_file())
             self.assertTrue((run_dir / "policy.pt").is_file())
             self.assertTrue((run_dir / "data" / "manifest.json").is_file())
@@ -142,6 +171,20 @@ class WorldModelTests(unittest.TestCase):
             self.assertIn("frequency_baseline_gate_passed", metrics)
             self.assertIn("rollout_mae_1", metrics["rollout_error_metrics"])
             self.assertEqual(metrics["reactive_policy_metrics"]["success_rate"], 0.0)
+            learned = metrics["learned_policy_metrics"]
+            failure_total = (
+                learned["successes"]
+                + learned["failure_key_never_collected"]
+                + learned["failure_key_no_open"]
+                + learned["failure_gate_never_opened"]
+                + learned["failure_opened_never_crossed"]
+                + learned["failure_crossed_never_reached"]
+            )
+            self.assertEqual(failure_total, learned["tasks"])
+            self.assertIn("failure_breakdown_description", metrics)
+            self.assertEqual(metrics["policy_aggregation_rounds"], 1.0)
+            self.assertEqual(len(metrics["policy_aggregation_examples_per_round"]), 1)
+            self.assertIn("Dataset aggregation: 1", metrics["behavior_cloning_description"])
             large_sample = metrics["large_sample_metrics"]
             self.assertGreater(large_sample["tasks"], 0.0)
             self.assertIn("oracle_metrics", large_sample)

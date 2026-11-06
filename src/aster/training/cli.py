@@ -33,7 +33,11 @@ from aster.training.engine import (
     evaluate_world_model,
     train_world_model,
 )
-from aster.training.policy import evaluate_policy_examples, train_action_policy
+from aster.training.policy import (
+    collect_aggregation_examples,
+    evaluate_policy_examples,
+    train_action_policy,
+)
 
 
 _DEFAULT_CONFIG = {
@@ -52,6 +56,7 @@ _DEFAULT_CONFIG = {
     "output_dir": "runs",
     "evaluation_seed_start": 100,
     "evaluation_seed_count": 200,
+    "policy_aggregation_rounds": 0,
 }
 
 _FREQUENCY_GATE_ACCURACIES = (
@@ -70,13 +75,23 @@ _FREQUENCY_GATE_MAES = (
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train Aster's Workshop world model from scratch.")
     parser.add_argument("--config", type=Path, required=True, help="JSON training configuration")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="override the config seed (data split, initialization, and run id)",
+    )
     arguments = parser.parse_args()
-    run_dir = train_from_config(arguments.config)
+    run_dir = train_from_config(arguments.config, seed_override=arguments.seed)
     print(f"Training run saved to {run_dir}")
 
 
-def train_from_config(config_path: Path) -> Path:
+def train_from_config(config_path: Path, seed_override: int | None = None) -> Path:
     config = _read_config(config_path)
+    if seed_override is not None:
+        if seed_override < 0:
+            raise ValueError("seed cannot be negative")
+        config["seed"] = seed_override
     seed_count = int(config["seed_count"])
     if seed_count < 3:
         raise ValueError("seed_count must be at least three for train/validation/test splits")
@@ -131,6 +146,20 @@ def train_from_config(config_path: Path) -> Path:
         max_steps=max_steps,
     )
     policy_result = train_action_policy(splits.train, splits.validation, settings)
+    aggregation_rounds = int(config["policy_aggregation_rounds"])
+    aggregation_sizes: list[int] = []
+    for _ in range(aggregation_rounds):
+        new_rows = collect_aggregation_examples(
+            policy_result.model,
+            splits.train_layouts,
+            max_steps=max_steps,
+        )
+        aggregation_sizes.append(len(new_rows))
+        policy_result = train_action_policy(
+            splits.train + new_rows,
+            splits.validation,
+            settings,
+        )
     policy_test_metrics = evaluate_policy_examples(policy_result.model, splits.test)
     learned_policy_metrics = evaluate_action_policy_layouts(
         policy_result.model,
@@ -235,15 +264,32 @@ def train_from_config(config_path: Path) -> Path:
         ),
         "behavior_cloning_description": (
             "The separate action policy is a neural behavior-cloning baseline trained only "
-            "on expert actions; execution masks illegal actions and has no goal-distance "
-            "heuristic."
+            "on expert-labeled actions; execution masks illegal actions and has no "
+            "goal-distance heuristic."
+            + (
+                f" Dataset aggregation: {aggregation_rounds} round(s) added "
+                "expert labels on policy-visited states before retraining; the "
+                "expert only supplies labels and never acts at evaluation."
+                if aggregation_rounds
+                else " Trained on expert routes only; no dataset aggregation."
+            )
         ),
+        "policy_aggregation_rounds": float(aggregation_rounds),
+        "policy_aggregation_examples_per_round": [
+            float(size) for size in aggregation_sizes
+        ],
         "policy_test_metrics": policy_test_metrics,
         "learned_policy_metrics": learned_policy_metrics,
         "random_legal_policy_metrics": random_policy_metrics,
         "reactive_baseline_description": (
             "Reactive baseline: greedy path toward the target that ignores keys, "
             "switches, and doors; gated tasks are unsolvable for it."
+        ),
+        "failure_breakdown_description": (
+            "failure_* keys count non-success episodes by how far they got and "
+            "partition non-success episodes per gate family; episodes_gate_reclosed "
+            "and episodes_with_invalid_actions are auxiliary behavior flags. These "
+            "describe behavior, not planning competence."
         ),
         "reactive_policy_metrics": reactive_policy_metrics,
         "large_sample_metrics": large_sample_metrics,
@@ -364,4 +410,6 @@ def _read_config(path: Path) -> dict[str, Any]:
             raise ValueError(f"{name} must be positive")
     if int(config["random_episodes_per_layout"]) < 0:
         raise ValueError("random_episodes_per_layout cannot be negative")
+    if int(config["policy_aggregation_rounds"]) < 0:
+        raise ValueError("policy_aggregation_rounds cannot be negative")
     return config
