@@ -1,0 +1,131 @@
+name: Scaling study
+
+on:
+  push:
+    paths:
+      - scripts/run-scaling-study
+      - .github/workflows/scaling-study.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cells:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: mlp-and-tiny
+            only: "mlp-tiny,mlp-5m,mlp-10m,transformer-tiny"
+          - group: transformer-5m
+            only: transformer-5m
+          - group: transformer-10m
+            only: transformer-10m
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare repository logs
+        run: |
+          mkdir -p action-output
+          printf 'Run: %s\nCommit: %s\nGroup: %s\n\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "${{ matrix.group }}" \
+            > "action-output/study-${{ matrix.group }}.log"
+      - name: Install project
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch \
+            2>&1 | tee -a "action-output/install-${{ matrix.group }}.log"
+          python -m pip install -e '.[train]' \
+            2>&1 | tee -a "action-output/install-${{ matrix.group }}.log"
+      - name: Run unit tests
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests \
+            2>&1 | tee -a "action-output/tests-${{ matrix.group }}.log"
+      - name: Train scaling-study cells
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m aster.scaling --epochs 25 --patience 5 \
+            --only "${{ matrix.only }}" \
+            --output-dir action-output \
+            2>&1 | tee -a "action-output/study-${{ matrix.group }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: study-${{ matrix.group }}
+          path: action-output/
+
+  collect:
+    needs: cells
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          path: action-output
+      - name: Merge cell reports
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ORDER = [
+              "mlp-tiny", "mlp-5m", "mlp-10m",
+              "transformer-tiny", "transformer-5m", "transformer-10m",
+          ]
+          reports = sorted(Path("action-output").glob("**/report.json"))
+          if not reports:
+              raise SystemExit("no scaling-study reports found in artifacts")
+          merged = None
+          cells = {}
+          invocations = []
+          for path in reports:
+              data = json.loads(path.read_text(encoding="utf-8"))
+              if merged is None:
+                  merged = data
+              for cell in data.get("cells", []):
+                  cells[cell["name"]] = cell
+              invocations.extend(data.get("invocations", []))
+          merged["cells"] = [cells[name] for name in ORDER if name in cells]
+          merged["invocations"] = invocations
+          out = Path("action-output/scaling-study")
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "report.json").write_text(
+              json.dumps(merged, indent=2) + "\n", encoding="utf-8"
+          )
+          print(f"merged {len(merged['cells'])} cells from {len(reports)} reports")
+          PY
+      - name: Commit results to the triggering branch
+        if: always()
+        shell: bash
+        run: |
+          if [[ ! -f action-output/scaling-study/report.json ]]; then
+            echo "No merged report to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add action-output
+          if git diff --cached --quiet; then
+            echo "Results are unchanged; no commit needed."
+            exit 0
+          fi
+          git commit -m "Record scaling-study results"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

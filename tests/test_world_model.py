@@ -14,7 +14,7 @@ if TORCH_AVAILABLE:
     from aster.cognition.evaluation import evaluate_controller
     from aster.cognition.policy import ActionPolicy
     from aster.cognition.policy_evaluation import evaluate_reactive_policy_layouts
-    from aster.cognition.world_model import TransitionModel
+    from aster.cognition.world_model import TransitionModel, examples_to_tensors
     from aster.environment import Action, GateKind, Workshop, expert_action, make_workshop_layout
     from aster.environment.baselines import choose_reactive_action
     from aster.training.baselines import evaluate_frequency_baseline
@@ -25,6 +25,7 @@ if TORCH_AVAILABLE:
         TrainingSettings,
         evaluate_rollout_error,
         evaluate_world_model,
+        fit_transition_model,
         train_world_model,
     )
 
@@ -60,6 +61,34 @@ class WorldModelTests(unittest.TestCase):
         self.assertGreaterEqual(metrics["agent_position_accuracy"], 0.0)
         self.assertLessEqual(metrics["agent_position_accuracy"], 1.0)
         self.assertGreaterEqual(metrics["gate_state_accuracy"], 0.0)
+
+    def test_fit_accepts_pretensorized_splits_equivalently(self) -> None:
+        examples = collect_examples(range(6), random_episodes_per_layout=0, max_steps=32)
+        splits = split_by_layout(examples, seed=3)
+        settings = TrainingSettings(
+            epochs=2,
+            batch_size=32,
+            hidden_size=16,
+            patience=2,
+            seed=5,
+        )
+        feature_size = len(splits.train[0].state)
+        torch.manual_seed(5)
+        first = TransitionModel(feature_size=feature_size, hidden_size=16)
+        torch.manual_seed(5)
+        second = TransitionModel(feature_size=feature_size, hidden_size=16)
+        device = torch.device(settings.device)
+        training_tensors = examples_to_tensors(splits.train, device)
+        validation_tensors = examples_to_tensors(splits.validation, device)
+        rows_result = fit_transition_model(first, splits.train, splits.validation, settings)
+        tensors_result = fit_transition_model(
+            second, training_tensors, validation_tensors, settings
+        )
+        self.assertEqual(len(rows_result.history), len(tensors_result.history))
+        self.assertEqual(rows_result.best_validation_loss, tensors_result.best_validation_loss)
+        for row in rows_result.history:
+            matching = next(h for h in tensors_result.history if h["epoch"] == row["epoch"])
+            self.assertEqual(row["train_loss"], matching["train_loss"])
 
     def test_frequency_baseline_is_deterministic_and_stateless(self) -> None:
         examples = collect_examples(range(4), random_episodes_per_layout=1, max_steps=24)
@@ -187,6 +216,44 @@ class WorldModelTests(unittest.TestCase):
         )
         errors = _error_flags(mean_prediction, mean_logits, target)
         self.assertFalse(bool(errors[0]))
+
+    def test_transformer_matches_transition_model_contract(self) -> None:
+        from aster.cognition.transformer import TransformerTransitionModel
+        from aster.training.engine import fit_transition_model
+
+        examples = collect_examples(range(4), random_episodes_per_layout=0, max_steps=24)
+        splits = split_by_layout(examples, seed=1)
+        model = TransformerTransitionModel(214, d_model=32, layers=1, heads=2)
+        self.assertEqual(model.feature_size, 214)
+        result = fit_transition_model(
+            model,
+            splits.train,
+            splits.validation,
+            TrainingSettings(
+                epochs=1,
+                batch_size=32,
+                hidden_size=32,
+                patience=1,
+                seed=5,
+            ),
+        )
+        metrics = evaluate_world_model(result.model, splits.test)
+        self.assertIn("agent_position_accuracy", metrics)
+        rollouts = evaluate_rollout_error(result.model, splits.test, horizons=(1,))
+        self.assertIn("rollout_mae_1", rollouts)
+
+    def test_scaling_budget_builders_hit_targets(self) -> None:
+        from aster.training.scaling import _mlp_for_budget, _transformer_for_budget
+
+        model, config = _mlp_for_budget(214, 5_000_000)
+        parameters = sum(p.numel() for p in model.parameters())
+        self.assertAlmostEqual(parameters, 5_000_000, delta=50_000)
+        self.assertIn("hidden_size", config)
+
+        transformer, transformer_config = _transformer_for_budget(214, 5_000_000)
+        transformer_parameters = sum(p.numel() for p in transformer.parameters())
+        self.assertAlmostEqual(transformer_parameters, 5_000_000, delta=250_000)
+        self.assertIn("d_model", transformer_config)
 
     def test_configured_run_saves_model_data_and_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -1,5 +1,6 @@
 """Reproducible supervised fitting and held-out evaluation for world dynamics."""
 
+import gc
 from dataclasses import dataclass
 from typing import Any
 
@@ -45,16 +46,45 @@ def train_world_model(
     _validate_settings(settings)
     if not training_examples or not validation_examples:
         raise ValueError("training and validation splits must both contain examples")
+    feature_size = len(training_examples[0].state)
+    torch.manual_seed(settings.seed)
+    model = TransitionModel(feature_size, settings.hidden_size)
+    return fit_transition_model(model, training_examples, validation_examples, settings)
+
+
+def fit_transition_model(
+    model: torch.nn.Module,
+    training_examples: tuple[TransitionExample, ...] | tuple[Tensor, ...],
+    validation_examples: tuple[TransitionExample, ...] | tuple[Tensor, ...],
+    settings: TrainingSettings,
+) -> TrainingResult:
+    """Fit a caller-supplied transition model with the standard supervised loop.
+
+    Any model exposing the ``forward(state, actions) -> (state_logits,
+    reward, done, invalid)`` contract can be trained here, which keeps
+    architecture comparisons on identical data, optimizer, and stopping
+    rules. Each split may be given either as transition examples or as a
+    prebuilt ``examples_to_tensors`` tuple; the tensor form lets callers
+    free the raw Python rows before a long training run.
+    """
+    _validate_settings(settings)
+    if not training_examples or not validation_examples:
+        raise ValueError("training and validation splits must both contain examples")
 
     device = torch.device(settings.device)
-    torch.manual_seed(settings.seed)
-    feature_size = len(training_examples[0].state)
-    if any(len(row.state) != feature_size for row in training_examples + validation_examples):
-        raise ValueError("all observations must have the same feature size")
-
-    training = examples_to_tensors(training_examples, device)
-    validation = examples_to_tensors(validation_examples, device)
-    model = TransitionModel(feature_size, settings.hidden_size).to(device)
+    if isinstance(training_examples[0], TransitionExample):
+        feature_size = len(training_examples[0].state)
+        if any(len(row.state) != feature_size for row in training_examples + validation_examples):
+            raise ValueError("all observations must have the same feature size")
+        training = examples_to_tensors(training_examples, device)
+        validation = examples_to_tensors(validation_examples, device)
+    else:
+        training = tuple(tensor.to(device) for tensor in training_examples)
+        validation = tuple(tensor.to(device) for tensor in validation_examples)
+        feature_size = int(training[0].shape[1])
+    if getattr(model, "feature_size", feature_size) != feature_size:
+        raise ValueError("model feature size does not match the data")
+    model = model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=settings.learning_rate)
     random_generator = torch.Generator(device=device).manual_seed(settings.seed)
 
@@ -83,9 +113,10 @@ def train_world_model(
             optimizer.step()
             total_loss += float(loss.detach()) * len(indices)
 
-        train_loss = total_loss / len(training_examples)
-        validation_metrics = evaluate_world_model(model, validation_examples, device=device)
+        train_loss = total_loss / len(training[0])
+        validation_metrics = _evaluate_tensors(model, validation, batch_size=512)
         history.append({"epoch": float(epoch), "train_loss": train_loss, **validation_metrics})
+        gc.collect()
 
         if validation_metrics["loss"] < best_loss:
             best_loss = validation_metrics["loss"]
@@ -115,6 +146,15 @@ def evaluate_world_model(
         raise ValueError("cannot evaluate an empty dataset split")
     evaluation_device = device or next(model.parameters()).device
     tensors = examples_to_tensors(examples, evaluation_device)
+    return _evaluate_tensors(model, tensors, batch_size)
+
+
+def _evaluate_tensors(
+    model: TransitionModel,
+    tensors: tuple[Tensor, ...],
+    batch_size: int = 512,
+) -> dict[str, float]:
+    count = len(tensors[0])
     was_training = model.training
     model.eval()
 
@@ -125,8 +165,8 @@ def evaluate_world_model(
     predicted_invalids: list[Tensor] = []
     try:
         with torch.no_grad():
-            for start in range(0, len(examples), batch_size):
-                end = min(start + batch_size, len(examples))
+            for start in range(0, count, batch_size):
+                end = min(start + batch_size, count)
                 batch = tuple(tensor[start:end] for tensor in tensors)
                 state_logits, reward_prediction, done_logits, invalid_logits = model(
                     batch[0],
@@ -157,7 +197,7 @@ def evaluate_world_model(
         tensors[4],
         tensors[5],
     )
-    return {"loss": weighted_loss / len(examples), **metrics}
+    return {"loss": weighted_loss / count, **metrics}
 
 
 def evaluate_rollout_error(
