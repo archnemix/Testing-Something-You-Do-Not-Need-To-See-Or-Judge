@@ -1,0 +1,139 @@
+{
+  "protocol": "sequential conversational skills: teach by talking/doing, test by asking, one skill at a time, time passing every turn",
+  "skills": [
+    "yard",
+    "kitchen",
+    "trades",
+    "words",
+    "places",
+    "chores"
+  ],
+  "roomy": {
+    "max_neurons": 3000,
+    "matrix": {
+      "yard": {
+        "yard": 1.0,
+        "kitchen": 1.0,
+        "trades": 1.0,
+        "words": 1.0,
+        "places": 1.0,
+        "chores": 1.0
+      },
+      "kitchen": {
+        "kitchen": 1.0,
+        "trades": 1.0,
+        "words": 1.0,
+        "places": 1.0,
+        "chores": 1.0
+      },
+      "trades": {
+        "trades": 1.0,
+        "words": 1.0,
+        "places": 1.0,
+        "chores": 1.0
+      },
+      "words": {
+        "words": 1.0,
+        "places": 1.0,
+        "chores": 1.0
+      },
+      "places": {
+        "places": 1.0,
+        "chores": 1.0
+      },
+      "chores": {
+        "chores": 1.0
+      }
+    },
+    "practice": [
+      {
+        "after": "yard",
+        "yard_falling": 0.9955,
+        "kitchen_pot": 0.0,
+        "known_facts": 9,
+        "neurons": 51
+      },
+      {
+        "after": "kitchen",
+        "yard_falling": 0.9829,
+        "kitchen_pot": 0.6954,
+        "known_facts": 39,
+        "neurons": 210
+      },
+      {
+        "after": "trades",
+        "yard_falling": 0.9712,
+        "kitchen_pot": 0.7548,
+        "known_facts": 69,
+        "neurons": 312
+      },
+      {
+        "after": "words",
+        "yard_falling": 0.9598,
+        "kitchen_pot": 0.7905,
+        "known_facts": 82,
+        "neurons": 480
+      },
+      {
+        "after": "places",
+        "yard_falling": 0.9482,
+        "kitchen_pot": 0.8097,
+        "known_facts": 100,
+        "neurons": 591
+      },
+      {
+        "after": "chores",
+        "yard_falling": 0.9364,
+        "kitchen_pot": 0.8171,
+        "known_facts": 100,
+        "neurons": 711
+      }
+    ],
+    "turns": 404,
+    "known_facts": 100,
+    "neurons": 711
+  },
+  "tight": {
+    "max_neurons": 400,
+    "matrix": {
+      "yard": {
+        "yard": 1.0
+      },
+      "kitchen": {
+        "kitchen": 1.0
+      },
+      "trades": {
+        "trades": 1.0
+      },
+      "words": {
+        "words": 1.0
+      },
+      "places": {
+        "places": 1.0
+      },
+      "chores": {
+        "chores": 0.5
+      }
+    },
+    "reteached": "chores",
+    "before_reteach": {
+      "yard": 0.6666666666666666,
+      "kitchen": 1.0,
+      "trades": 1.0,
+      "words": 1.0,
+      "places": 1.0,
+      "chores": 0.5
+    },
+    "after_reteach": {
+      "yard": 0.6666666666666666,
+      "kitchen": 1.0,
+      "trades": 1.0,
+      "words": 1.0,
+      "places": 1.0,
+      "chores": 1.0
+    },
+    "turns": 413,
+    "known_facts": 81,
+    "neurons": 399
+  }
+}

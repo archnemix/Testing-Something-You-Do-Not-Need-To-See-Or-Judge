@@ -9,8 +9,10 @@ from aster.reasoning import answers_with_hops_for
 
 
 class Aster:
-    def __init__(self, memory_path: Path | None = None) -> None:
-        self.memory = MemoryStore(memory_path)
+    def __init__(
+        self, memory_path: Path | None = None, max_neurons: int | None = None
+    ) -> None:
+        self.memory = MemoryStore(memory_path, max_neurons=max_neurons)
 
     def respond(self, text: str) -> str:
         parsed = parse_input(text)
@@ -39,7 +41,8 @@ class Aster:
             sentences = [f"{parsed.subject} {parsed.relation} {value}." for value in direct_answers]
             for value in inferred_answers:
                 sentences.append(
-                    f"By following stored 'is' facts, {parsed.subject} is also {value}."
+                    f"By following stored '{parsed.relation}' facts, "
+                    f"{parsed.subject} is also {value}."
                 )
             return " ".join(sentences)
         if parsed.kind is InputKind.GOAL and parsed.subject:

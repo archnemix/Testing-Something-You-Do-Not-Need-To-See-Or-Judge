@@ -4,10 +4,36 @@ import re
 
 from aster.models import Fact, InputKind, ParsedInput
 
-_FACT = re.compile(r"^(.+?)\s+(is|has)\s+(.+?)\s*[.!?]*$", re.IGNORECASE)
-_IS_QUESTION = re.compile(r"^(?:what|who)\s+is\s+(.+?)\s*\??$", re.IGNORECASE)
-_HAS_QUESTION = re.compile(r"^what\s+does\s+(.+?)\s+have\s*\??$", re.IGNORECASE)
+_FACT = re.compile(
+    r"^(.+?)\s+(is|are|has|have|means|mean|causes|cause|makes|make)\s+(.+?)\s*[.!?]*$",
+    re.IGNORECASE,
+)
+_IS_QUESTION = re.compile(r"^(?:what|who)\s+(?:is|are)\s+(.+?)\s*\??$", re.IGNORECASE)
+_DOES_QUESTION = re.compile(
+    r"^what\s+does\s+(.+?)\s+(have|do|cause|mean|make)s?\s*\??$", re.IGNORECASE
+)
 _GOAL = re.compile(r"^(?:goal\s*:\s*|my goal is\s+)(.+?)\s*[.!]*$", re.IGNORECASE)
+
+_RELATIONS = {
+    "is": "is",
+    "are": "is",
+    "has": "has",
+    "have": "has",
+    "means": "means",
+    "mean": "means",
+    "causes": "causes",
+    "cause": "causes",
+    "makes": "makes",
+    "make": "makes",
+}
+
+_QUESTION_RELATIONS = {
+    "have": "has",
+    "do": "does",
+    "cause": "causes",
+    "mean": "means",
+    "make": "makes",
+}
 
 
 def parse_input(text: str) -> ParsedInput:
@@ -35,20 +61,21 @@ def parse_input(text: str) -> ParsedInput:
             relation="is",
         )
 
-    question_match = _HAS_QUESTION.match(cleaned)
+    question_match = _DOES_QUESTION.match(cleaned)
     if question_match:
+        subject, verb = question_match.groups()
         return ParsedInput(
             InputKind.QUESTION,
             cleaned,
-            subject=question_match.group(1).strip().rstrip("?.!"),
-            relation="has",
+            subject=subject.strip().rstrip("?.!"),
+            relation=_QUESTION_RELATIONS[verb.casefold()],
         )
 
     fact_match = _FACT.match(cleaned)
     if fact_match:
-        subject, relation, obj = (part.strip().rstrip(".!?") for part in fact_match.groups())
+        subject, verb, obj = (part.strip().rstrip(".!?") for part in fact_match.groups())
         if subject and obj:
-            fact = Fact(subject, relation.casefold(), obj)
+            fact = Fact(subject, _RELATIONS[verb.casefold()], obj)
             return ParsedInput(InputKind.FACT, cleaned, fact=fact)
 
     return ParsedInput(InputKind.OTHER, cleaned)

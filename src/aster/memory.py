@@ -18,12 +18,17 @@ from aster.models import Episode, Fact, Goal
 
 
 class MemoryStore:
-    def __init__(self, path: Path | None = None, working_capacity: int = 7) -> None:
+    def __init__(
+        self,
+        path: Path | None = None,
+        working_capacity: int = 7,
+        max_neurons: int | None = None,
+    ) -> None:
         if working_capacity < 1:
             raise ValueError("working_capacity must be at least 1")
         self.path = path
         self.working_capacity = working_capacity
-        self.network = PlasticNetwork()
+        self.network = PlasticNetwork(max_neurons=max_neurons)
         self.goals: list[Goal] = []
         self.episodes: deque[Episode] = deque(maxlen=working_capacity)
         if path is not None and path.exists():

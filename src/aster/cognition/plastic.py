@@ -20,6 +20,7 @@ KNOWN_BELOW = 0.5  # a pathway at or above this strength counts as "already know
 ANSWER_AT = 0.2  # ensemble activation needed to fire as an answer
 RECRUIT_AT = 0.75  # identity overlap below which a new ensemble is born
 CUE_AT = 0.4  # weaker overlap still cues an existing concept (associative recall)
+PREFIX_COVER = 0.75  # a cue's word-beginnings must mostly match the memory
 FALLOFF = 0.8  # activation multiplier per spreading hop
 USE_BOOST = 0.5  # retrieval re-strengthening factor (use-dependent plasticity)
 IMPRINT_BOOST = 0.2
@@ -332,36 +333,28 @@ class PlasticNetwork:
         features = phrase_features(phrase)
         if not features:
             return None
-        best: Ensemble | None = None
-        best_activation = 0.0
-        runner_up = 0.0
+        scored: list[tuple[float, Ensemble]] = []
+        cue_prefixes = {f for f in features if f.startswith("pre:")}
         for ensemble in self._ensembles.values():
             stored = self._ensemble_features.get(ensemble.identifier, set())
             shared = features & stored
             if not shared:
                 continue
+            # pattern separation: a cue reaches one memory by its word
+            # beginnings, not by sharing stray letters ("vel" is not "tivel")
+            shared_prefixes = {f for f in shared if f.startswith("pre:")}
+            if len(shared_prefixes) < PREFIX_COVER * len(cue_prefixes):
+                continue
             weight = sum(
                 self._imprints.get((feature, ensemble.neurons[0]), 0.0)
                 for feature in shared
             )
-            activation = weight / len(features | stored)
-            if activation > best_activation:
-                runner_up = best_activation
-                best_activation = activation
-                best = ensemble
-            elif activation > runner_up:
-                runner_up = activation
-        # a cue must pick ONE memory clearly (pattern separation): a tie
-        # means the phrase is ambiguous, not that either memory is right
-        clear_winner = best is not None and (
-            best_activation > runner_up or runner_up < CUE_AT
-        )
-        if (
-            best is not None
-            and clear_winner
-            and best_activation >= (RECRUIT_AT if recruit else CUE_AT)
-        ):
-            return best
+            scored.append((weight / len(features | stored), ensemble))
+        scored.sort(key=lambda item: item[0], reverse=True)
+        threshold = RECRUIT_AT if recruit else CUE_AT
+        if scored and scored[0][0] >= threshold:
+            if len(scored) == 1 or scored[0][0] > scored[1][0]:
+                return scored[0][1]  # one clear memory, not a look-alike tie
         if not recruit:
             return None
         return self._recruit(phrase, features)
@@ -393,6 +386,11 @@ class PlasticNetwork:
             return False
 
         def aggregate(ensemble: Ensemble) -> float:
+            """Importance = strength of what it knows (its connections).
+
+            Imprints (perception) are deliberately excluded: a concept is
+            not weaker because its name is short.
+            """
             own = set(ensemble.neurons)
             synapse_total = sum(
                 weight
@@ -404,12 +402,7 @@ class PlasticNetwork:
                 for (_, _, gate), weight in self._synapses.items()
                 if gate == ensemble.identifier
             )
-            imprint_total = sum(
-                weight
-                for (_, neuron), weight in self._imprints.items()
-                if neuron in own
-            )
-            return synapse_total + gated_total + imprint_total
+            return synapse_total + gated_total
 
         victim = min(candidates, key=lambda e: (aggregate(e), -e.born))
         victim_neurons = set(victim.neurons)

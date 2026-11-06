@@ -72,7 +72,9 @@ Four more brain properties live in the same substrate now.
   start over.
 - **Capacity.** The network can be given a neuron budget. When teaching
   would exceed it, the weakest idle ensemble gives up its neurons
-  (aggregate of its synapse weights plus imprints; ties go to the oldest).
+  (aggregate of its connection strengths; ties go to the oldest; the
+  perception layer is excluded so concepts with short names are not
+  penalized).
   Whatever is in use at that moment is never evicted, and what you keep
   practicing stays heavier than untouched material -- so under pressure
   the used skill survives and the abandoned one goes. Larger budgets hold
@@ -89,18 +91,34 @@ long engagement keeps quality high instead of degrading -- pathways only
 get stronger with use, and there is no context window to overflow
 (`test_skills_get_better_with_practice_over_long_engagement`).
 
-## The world model learns like this too (experiments started)
+## The world IS the world model (experiments started)
 
-`environment/physics.py` is a tiny deterministic world (a held object in a
-yard with walls and a floor). The network is never *told* about gravity:
-it watches trials -- "letting go" followed by "falling, landing" -- until
-the causal pathways form from repetition. Then the name can arrive last:
-telling it "that is called gravity" binds the word to the concept the
-experience already built, and the name and the experience answer as the
-same thing. The same push in an open yard and against a wall teaches two
-different outcomes -- the knowledge reflects the world, not a prior
-(`tests/test_physics_grounding.py`). This is the "discovering it is the
-ability" idea in runnable form.
+The physics playground is not a side demo about physics: it stands for
+the world itself, and the model of it is the same pathway substrate as
+everything else — shaped by "training data" the way training shapes
+weights: by acting (trials in the yard) and by talking (sentences in
+conversation). There is no separate store of world facts. `environment/
+physics.py` is where this was first shown: the network is never *told*
+about gravity — it watches trials ("letting go" then "falling, landing")
+until causal pathways form, and the name arrives last: "that is called
+gravity" binds the word to the concept experience already built, and
+name and experience answer as the same thing. The same push in an open
+yard and against a wall teaches two different outcomes — knowledge
+reflects the world, not a prior (`tests/test_physics_grounding.py`).
+
+## Skills through conversation: teach, test, teach another, test
+
+`src/aster/skills.py` runs the requested protocol at study scale (six
+skills, 180 facts, 70 test questions, 404 turns): teach skill 1 through
+conversation and doing, test it, then keep talking and teach skill 2,
+test whether it landed — and so on. A roomy brain (3000-neuron budget)
+retains every skill perfectly across the whole sequence, and practiced
+pathways measurably *strengthen* over the engagement (0.70 -> 0.82)
+while idle ones fade slowly — quality improves with use instead of
+degrading with length. A tight brain (400) learns each new skill as it
+comes (until capacity binds at the frontier), lets the oldest skill
+fade, and relearns a fallen skill completely when it is shown again
+(`tests/test_skill_stream.py`, full matrices in `technical.md`).
 
 ## Requirement to proof map
 
@@ -117,6 +135,10 @@ ability" idea in runnable form.
 | Causal knowledge from experience, not telling | `test_falling_is_learned_from_experience_not_telling` |
 | World knowledge reflects the world, not a prior | `test_the_world_not_a_prior_decides_what_is_learned` |
 | Discovery first, naming after (grounded names) | `test_discovery_precedes_naming_and_the_name_is_grounded` |
+| Skills taught by talking, tested by asking | `test_one_skill_taught_by_talking_is_learned_and_testable` |
+| New skill lands mid-conversation, old one survives | `test_second_skill_talked_in_mid_conversation_lands_and_first_survives` |
+| Experience and talk shape one shared brain | `test_experience_and_talk_shape_one_shared_brain` |
+| Fallen skills relearn under capacity pressure | `test_a_fallen_skill_relearns_quickly_in_a_tight_brain` |
 | Structural growth | `test_network_physically_grows_when_told_new_things` |
 | No padding, no context window | `test_variable_length_stream_needs_no_padding_or_window` |
 | Logic by firing (transitive, cyclic) | `test_transitive_chains_resolve_and_cycles_do_not_loop` |

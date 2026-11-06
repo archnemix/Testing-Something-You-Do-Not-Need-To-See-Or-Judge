@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-06 (3) — Skills through conversation: the world model is the model
+
+- `src/aster/skills.py`: the requested protocol at study scale — six
+  skills (one discovered by acting, five taught by talking), 180 facts,
+  70 test questions, 404 conversational turns; teach skill 1, test it,
+  teach skill 2 while talking, test whether it landed, and so on.
+  Report: `action-output/skill-stream/report.json`. Roomy brain retains
+  everything (all cells 1.00) and practiced pathways strengthen over the
+  engagement; tight brain (400) shows the oldest skill fading (1.00→0.67)
+  and a fallen skill relearning fully when shown again (0.50→1.00).
+- Grammar extended for real teaching: facts and questions now cover
+  `is/are/has/means/causes/makes` ("gravity means falling", "what does
+  letting go cause?"); hop-2 wording names the relation it followed.
+- Recognition fixes found by the study: a cue must reach a memory by its
+  word-beginnings (a dead "vel" no longer gets confidently answered by
+  look-alike "tivel"), and capacity eviction weighs connection strength
+  only (imprints out — short-named concepts are no longer evicted first).
+- Framing: the physics world is not a side demo — it is the world model
+  proper, one substrate shaped by experience and talk, no separate fact
+  store. 63 tests green.
+
 ## 2026-11-06 (2) — Selective forgetting, skills that survive years, grounded world model
 
 - Consolidation: strong pathways decay far slower than weak traces

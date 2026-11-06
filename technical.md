@@ -80,6 +80,37 @@ What the table says:
 
 Repeat-run caution: individual numbers move a few points between machines (the same cells on the local 2-CPU sandbox produced slightly different third digits and different early-stopping epochs); the family-level ordering above held on both.
 
+## Conversational skill stream (2026-11-06)
+
+Protocol (`python -m aster.skills`, report in
+`action-output/skill-stream/report.json`): six skills — one discovered by
+acting in a world (yard physics), five taught purely by talking (kitchen,
+trades, words, places, chores; 180 facts, 70 test questions). Skill k is
+taught, immediately tested, then the conversation moves on; 404 turns
+total, one tick of time per turn. Two brains run the identical stream.
+
+**Roomy** (budget 3000 neurons, 711 used): every cell of the retention
+matrix is 1.00 — each skill is learned when taught and still answers
+after every later skill. The practice probe shows the quality-over-time
+property directly: the kitchen skill's pathway strength *grows* with use
+(0.70 -> 0.82 across checkpoints) while an idle pathway drifts down only
+slowly (yard falling 1.00 -> 0.94, still answering). Known facts peak at
+100 measured groups.
+
+**Tight** (budget 400 neurons, 399 used): each skill is tested right
+after teaching (diagonal 1.00, 1.00, 1.00, 1.00, 1.00, 0.50 — the last
+skill strains at the frontier of capacity). At the end-of-stream test the
+oldest skill has faded (yard 1.00 -> 0.67) while the middle skills hold
+(1.00). Re-showing the fallen skill once — relearn its practiced core,
+talk through it, then the rest — brings it fully back (chores 0.50 ->
+1.00) without costing the others. Old skills fade, new ones land, and
+the brain relearns to its capacity.
+
+Measurement detail: accuracy = share of a skill's test questions whose
+expected wording appears in the agent's reply; every question and every
+teaching turn goes through the same conversation channel
+(`Aster.respond`), and the knowledge lives only in pathway strengths.
+
 ## Install, run, test
 
 ```sh
