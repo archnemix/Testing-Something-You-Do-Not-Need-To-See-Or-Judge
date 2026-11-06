@@ -1,0 +1,19 @@
+Run: 42213445282
+Commit: 595aef7868aa3e164d505d176d3aab83b3af9514
+Group: transformer-5m
+
+[transformer-5m] training with 4966413 parameters ...
+[transformer-5m] val_loss=0.4021 test_loss=0.4212 agent_acc=0.9997 (2560s)
+[
+  {
+    "name": "transformer-5m",
+    "parameters": 4966413,
+    "epochs_completed": 20,
+    "best_validation_loss": 0.4021,
+    "test_loss": 0.4212,
+    "agent_position_accuracy": 0.9997,
+    "rollout_mae_10": 0.0018,
+    "train_wall_seconds": 2560.0
+  }
+]
+SCALING STUDY COMPLETE -> action-output/scaling-study-20261106-115314

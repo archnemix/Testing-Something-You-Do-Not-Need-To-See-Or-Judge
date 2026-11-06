@@ -1,0 +1,19 @@
+Run: 42213445282
+Commit: 595aef7868aa3e164d505d176d3aab83b3af9514
+Group: transformer-10m
+
+[transformer-10m] training with 9889933 parameters ...
+[transformer-10m] val_loss=1.6602 test_loss=1.6899 agent_acc=0.5727 (5960s)
+[
+  {
+    "name": "transformer-10m",
+    "parameters": 9889933,
+    "epochs_completed": 16,
+    "best_validation_loss": 1.6602,
+    "test_loss": 1.6899,
+    "agent_position_accuracy": 0.5727,
+    "rollout_mae_10": 0.0357,
+    "train_wall_seconds": 5959.8
+  }
+]
+SCALING STUDY COMPLETE -> action-output/scaling-study-20261106-115320

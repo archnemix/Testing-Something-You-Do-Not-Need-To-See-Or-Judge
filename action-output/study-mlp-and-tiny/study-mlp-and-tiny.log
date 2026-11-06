@@ -1,0 +1,55 @@
+Run: 42213445282
+Commit: 595aef7868aa3e164d505d176d3aab83b3af9514
+Group: mlp-and-tiny
+
+[mlp-tiny] training with 72921 parameters ...
+[mlp-tiny] val_loss=0.1881 test_loss=0.1745 agent_acc=0.9995 (18s)
+[mlp-5m] training with 5009818 parameters ...
+[mlp-5m] val_loss=0.1303 test_loss=0.1232 agent_acc=0.9997 (100s)
+[mlp-10m] training with 10013401 parameters ...
+[mlp-10m] val_loss=0.1192 test_loss=0.1015 agent_acc=0.9995 (299s)
+[transformer-tiny] training with 104269 parameters ...
+[transformer-tiny] val_loss=0.0415 test_loss=0.0364 agent_acc=0.9995 (165s)
+[
+  {
+    "name": "mlp-tiny",
+    "parameters": 72921,
+    "epochs_completed": 25,
+    "best_validation_loss": 0.1881,
+    "test_loss": 0.1745,
+    "agent_position_accuracy": 0.9995,
+    "rollout_mae_10": 0.018,
+    "train_wall_seconds": 17.7
+  },
+  {
+    "name": "mlp-5m",
+    "parameters": 5009818,
+    "epochs_completed": 15,
+    "best_validation_loss": 0.1303,
+    "test_loss": 0.1232,
+    "agent_position_accuracy": 0.9997,
+    "rollout_mae_10": 0.0094,
+    "train_wall_seconds": 99.5
+  },
+  {
+    "name": "mlp-10m",
+    "parameters": 10013401,
+    "epochs_completed": 21,
+    "best_validation_loss": 0.1192,
+    "test_loss": 0.1015,
+    "agent_position_accuracy": 0.9995,
+    "rollout_mae_10": 0.0064,
+    "train_wall_seconds": 298.8
+  },
+  {
+    "name": "transformer-tiny",
+    "parameters": 104269,
+    "epochs_completed": 25,
+    "best_validation_loss": 0.0415,
+    "test_loss": 0.0364,
+    "agent_position_accuracy": 0.9995,
+    "rollout_mae_10": 0.002,
+    "train_wall_seconds": 165.0
+  }
+]
+SCALING STUDY COMPLETE -> action-output/scaling-study-20261106-115322

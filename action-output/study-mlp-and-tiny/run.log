@@ -1,0 +1,53 @@
+Run: 42070373411
+Commit: 8d7ebba61861ff1c4327ae516b755b92dfed1cf5
+
+Obtaining file:///home/runner/work/Testing-Something-You-Do-Not-Need-To-See-Or-Judge/Testing-Something-You-Do-Not-Need-To-See-Or-Judge
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: aster-cognitive-system
+  Building editable for aster-cognitive-system (pyproject.toml): started
+  Building editable for aster-cognitive-system (pyproject.toml): finished with status 'done'
+  Created wheel for aster-cognitive-system: filename=aster_cognitive_system-0.1.0-0.editable-py3-none-any.whl size=1500 sha256=f42867b282401518dd559f422abfa32f8cad5a02bce3a795cb0ac6bd84540a3e
+  Stored in directory: /tmp/pip-ephem-wheel-cache-tux2qqcn/wheels/bf/d5/42/b80f735d2513fc855456a50c595d86a855e71e86912fd33cf3
+Successfully built aster-cognitive-system
+Installing collected packages: aster-cognitive-system
+Successfully installed aster-cognitive-system-0.1.0
+
+[notice] A new release of pip is available: 26.2.2 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+test_parses_fact_and_question (test_aster.InputParsingTests.test_parses_fact_and_question) ... ok
+test_unrecognized_text_stays_unrecognized (test_aster.InputParsingTests.test_unrecognized_text_stays_unrecognized) ... ok
+test_deduplicates_without_case_sensitivity (test_aster.MemoryTests.test_deduplicates_without_case_sensitivity) ... ok
+test_rejects_a_memory_file_with_the_wrong_root_shape (test_aster.MemoryTests.test_rejects_a_memory_file_with_the_wrong_root_shape) ... ok
+test_round_trips_persistent_memory (test_aster.MemoryTests.test_round_trips_persistent_memory) ... ok
+test_working_memory_is_bounded (test_aster.MemoryTests.test_working_memory_is_bounded) ... ok
+test_agent_learns_queries_and_reports_unknowns (test_aster.ReasoningTests.test_agent_learns_queries_and_reports_unknowns) ... ok
+test_goal_is_persistent_state_not_emotion (test_aster.ReasoningTests.test_goal_is_persistent_state_not_emotion) ... ok
+test_transitive_is_facts_are_inferred_without_cycles (test_aster.ReasoningTests.test_transitive_is_facts_are_inferred_without_cycles) ... ok
+test_collection_is_reproducible_and_has_both_gate_families (test_training_data.TrainingDataTests.test_collection_is_reproducible_and_has_both_gate_families) ... ok
+test_requires_three_distinct_layouts (test_training_data.TrainingDataTests.test_requires_three_distinct_layouts) ... ok
+test_splits_keep_duplicate_layouts_together (test_training_data.TrainingDataTests.test_splits_keep_duplicate_layouts_together) ... ok
+test_writes_readable_splits_and_manifest (test_training_data.TrainingDataTests.test_writes_readable_splits_and_manifest) ... ok
+test_counterfactual_restoration_does_not_change_the_recorded_state (test_workshop.WorkshopTests.test_counterfactual_restoration_does_not_change_the_recorded_state) ... ok
+test_door_requires_key_and_explicit_interaction (test_workshop.WorkshopTests.test_door_requires_key_and_explicit_interaction) ... ok
+test_encoder_has_stable_shape_and_marks_global_state (test_workshop.WorkshopTests.test_encoder_has_stable_shape_and_marks_global_state) ... ok
+test_episode_ends_at_its_step_limit (test_workshop.WorkshopTests.test_episode_ends_at_its_step_limit) ... ok
+test_expert_coverage_policy_solves_seeded_layouts (test_workshop.WorkshopTests.test_expert_coverage_policy_solves_seeded_layouts) ... ok
+test_rejects_nonpositive_step_limits (test_workshop.WorkshopTests.test_rejects_nonpositive_step_limits) ... ok
+test_rejects_too_small_generated_maps (test_workshop.WorkshopTests.test_rejects_too_small_generated_maps) ... ok
+test_seeded_layouts_are_repeatable (test_workshop.WorkshopTests.test_seeded_layouts_are_repeatable) ... ok
+test_switch_opens_bridge_before_crossing (test_workshop.WorkshopTests.test_switch_opens_bridge_before_crossing) ... ok
+test_configured_run_saves_model_data_and_metrics (test_world_model.WorldModelTests.test_configured_run_saves_model_data_and_metrics) ... skipped 'install the optional training extra to test the neural model'
+test_hand_built_reference_controller_does_not_require_a_trained_model (test_world_model.WorldModelTests.test_hand_built_reference_controller_does_not_require_a_trained_model) ... skipped 'install the optional training extra to test the neural model'
+test_model_trains_from_random_initialization_and_evaluates (test_world_model.WorldModelTests.test_model_trains_from_random_initialization_and_evaluates) ... skipped 'install the optional training extra to test the neural model'
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.689s
+
+OK (skipped=3)

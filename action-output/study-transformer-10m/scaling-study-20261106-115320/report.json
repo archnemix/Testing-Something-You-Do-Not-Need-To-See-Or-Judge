@@ -1,0 +1,93 @@
+{
+  "description": "Same data, splits, optimizer, and stopping rules for every cell; the Transformer is a comparison yardstick, not part of the brain-inspired claim.",
+  "data": {
+    "seed_count": 60,
+    "split_seed": 17,
+    "train_examples": 18160,
+    "validation_examples": 3592,
+    "test_examples": 3864
+  },
+  "settings": {
+    "epochs": 25,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "patience": 5
+  },
+  "cells": [
+    {
+      "name": "transformer-10m",
+      "family": "transformer",
+      "parameters": 9889933,
+      "config": {
+        "d_model": 640,
+        "layers": 2,
+        "heads": 2
+      },
+      "epochs_completed": 16,
+      "best_validation_loss": 1.6602454764274819,
+      "final_train_loss": 1.984609529835537,
+      "val_loss_by_epoch": [
+        1.98917,
+        1.91763,
+        1.90938,
+        1.87265,
+        1.7096,
+        1.85618,
+        1.85889,
+        1.76871,
+        2.00286,
+        1.69294,
+        1.66025,
+        1.79655,
+        1.78086,
+        1.82227,
+        1.76171,
+        1.92673
+      ],
+      "test_metrics": {
+        "loss": 1.6898737563356356,
+        "dynamic_state_bit_accuracy": 0.9915031636384745,
+        "agent_position_accuracy": 0.5727225672877847,
+        "gate_state_accuracy": 0.9715320910973085,
+        "key_state_accuracy": 0.9875776397515528,
+        "time_remaining_mae": 0.04591881019481714,
+        "reward_mae": 0.1208641889426032,
+        "done_accuracy": 0.9811076604554866,
+        "invalid_action_accuracy": 0.8651656314699793,
+        "invalid_action_mae": 0.203042561469858
+      },
+      "rollout_error_metrics": {
+        "rollout_mae_1": 0.006610018123665756,
+        "rollout_dynamic_bit_accuracy_1": 0.9915031636384745,
+        "rollout_agent_position_accuracy_1": 0.5727225672877847,
+        "rollout_count_1": 3864.0,
+        "rollout_mae_3": 0.013540148547265323,
+        "rollout_dynamic_bit_accuracy_3": 0.9828054581628146,
+        "rollout_agent_position_accuracy_3": 0.27352572145545795,
+        "rollout_count_3": 2391.0,
+        "rollout_mae_5": 0.020498990822252983,
+        "rollout_dynamic_bit_accuracy_5": 0.9755732128163876,
+        "rollout_agent_position_accuracy_5": 0.16995181778361804,
+        "rollout_count_5": 2283.0,
+        "rollout_mae_10": 0.03566815929701204,
+        "rollout_dynamic_bit_accuracy_10": 0.9615680887989679,
+        "rollout_agent_position_accuracy_10": 0.07795431976166832,
+        "rollout_count_10": 2014.0
+      },
+      "train_wall_seconds": 5959.798019648,
+      "inference_seconds_per_example": 0.0030720236754659728
+    }
+  ],
+  "invocations": [
+    {
+      "selected": [
+        "transformer-10m"
+      ],
+      "epochs": 25,
+      "patience": 5,
+      "seed": 17,
+      "threads": 0,
+      "started_utc": "20261106-115324"
+    }
+  ]
+}
