@@ -48,10 +48,53 @@ class PlasticNetworkTests(unittest.TestCase):
         net.observe("Ada", "is", "a mathematician")
         self.assertTrue(net.retrieve("Ada", "is"))
         grown = net.neuron_count
-        net.tick(2500)
+        net.tick(25000)
         self.assertEqual(net.retrieve("Ada", "is"), [])
         self.assertEqual(net.known_fact_count(), 0)
         self.assertLess(net.neuron_count, grown)
+
+    def test_selective_forgetting_keeps_skills_loses_trivia(self) -> None:
+        net = PlasticNetwork()
+        net.observe("I had soup", "for", "lunch")  # a one-off detail
+        net.observe("Ada", "is", "a mathematician")  # knowledge that gets used
+        for _ in range(5):
+            net.retrieve("Ada", "is")
+        net.tick(3000)
+        self.assertEqual(net.retrieve("I had soup", "for"), [])
+        self.assertEqual(
+            [label for label, _ in net.retrieve("Ada", "is")],
+            ["a mathematician"],
+        )
+
+    def test_faded_knowledge_relearns_faster_than_first_learning(self) -> None:
+        net = PlasticNetwork()
+        net.observe("Ada", "is", "a mathematician")
+        net.tick(1200)  # fades to a weak trace but is not pruned yet
+        self.assertLess(net.path_strength("Ada", "is", "a mathematician"), 0.5)
+        net.observe("Ada", "is", "a mathematician")  # one re-telling
+        relearned = net.path_strength("Ada", "is", "a mathematician")
+        self.assertGreater(relearned, 0.65)  # a naive first telling only reaches 0.6
+
+    def test_capacity_competition_evicts_the_weakest(self) -> None:
+        small = PlasticNetwork(max_neurons=36)
+        large = PlasticNetwork(max_neurons=300)
+        for index in range(10):
+            small.observe(f"item{index}", "is", f"class{index}")
+            large.observe(f"item{index}", "is", f"class{index}")
+            if index == 0:
+                for _ in range(5):
+                    small.retrieve("item0", "is")  # keep practicing the early one
+        self.assertLess(small.known_fact_count(), 10)
+        self.assertGreater(small.known_fact_count(), 0)
+        self.assertEqual(large.known_fact_count(), 10)
+        self.assertEqual(
+            [label for label, _ in small.retrieve("item0", "is")],
+            ["class0"],
+        )  # what stays in use survives the pressure
+        self.assertEqual(
+            [label for label, _ in small.retrieve("item9", "is")],
+            ["class9"],
+        )  # the newest learning lands too
 
     def test_network_physically_grows_when_told_new_things(self) -> None:
         net = PlasticNetwork()

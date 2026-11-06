@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-06 (2) — Selective forgetting, skills that survive years, grounded world model
+
+- Consolidation: strong pathways decay far slower than weak traces
+  (`w*(1-decay*(1-0.8w))`); trivia fades, practiced knowledge persists,
+  and a forgotten detail first loses its answer while staying familiar
+  (tip-of-the-tongue) before pruning.
+- Savings: pathways remember peak strength and re-learn far faster than
+  first learning (one re-telling reaches 0.85 vs 0.6 naive).
+- Capacity: optional `max_neurons` budget with weakest-idle eviction
+  (in-use ensembles protected; ties evict oldest) — used skills survive
+  pressure, larger budgets hold more, and smaller ones still learn.
+- `environment/physics.py` + `tests/test_physics_grounding.py`: causal
+  knowledge (gravity, walls, pushing) formed from action trials, not
+  telling; names bound after discovery ("gravity" → the experienced
+  falling); the world, not a prior, decides outcomes. 58 tests green.
+
 Notable user-facing and architectural changes are recorded here.
 
 ## Unreleased

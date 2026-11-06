@@ -23,6 +23,9 @@ CUE_AT = 0.4  # weaker overlap still cues an existing concept (associative recal
 FALLOFF = 0.8  # activation multiplier per spreading hop
 USE_BOOST = 0.5  # retrieval re-strengthening factor (use-dependent plasticity)
 IMPRINT_BOOST = 0.2
+CONSOLIDATION = 0.8  # strong pathways are protected from decay (selective forgetting)
+SAVINGS = 0.6  # relearning boost from the dormant engram peak (relearn faster)
+DETERMINERS = {"the", "a", "an", "my", "your", "this", "that"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,9 +39,15 @@ class Ensemble:
 
 
 def phrase_features(phrase: str) -> set[str]:
-    """Perception: a phrase lights up spelling-feature neurons (case folded)."""
+    """Perception: a phrase lights up spelling-feature neurons (case folded).
+
+    Determiners carry no identity ("a ball" and "the ball" are the same
+    object), so perception keeps content words -- the brain remembers the
+    detail that matters, not the exact string.
+    """
     cleaned = re.sub(r"[^a-z0-9]+", " ", phrase.casefold()).strip()
     words = [word for word in cleaned.split() if word]
+    words = [word for word in words if word not in DETERMINERS] or words
     features: set[str] = set()
     for word in words:
         features.add(f"len:{min(len(word), 12)}")
@@ -62,22 +71,29 @@ class PlasticNetwork:
         prune_below: float = 0.02,
         spread_hops: int = 4,
         ensemble_size: int = 3,
+        max_neurons: int | None = None,
     ) -> None:
         if learning_rate <= 0.0 or not 0.0 < decay_rate < 1.0:
             raise ValueError("learning_rate must be positive and decay_rate in (0, 1)")
         if spread_hops < 1 or ensemble_size < 1:
             raise ValueError("spread_hops and ensemble_size must be at least 1")
+        if max_neurons is not None and max_neurons < ensemble_size:
+            raise ValueError("max_neurons must fit at least one ensemble")
         self.learning_rate = learning_rate
         self.decay_rate = decay_rate
         self.prune_below = prune_below
         self.spread_hops = spread_hops
         self.ensemble_size = ensemble_size
+        self.max_neurons = max_neurons
         self.clock = 0
         self._next_neuron = 0
+        self._next_ensemble_id = 0
+        self._protected: set[int] = set()
         self._ensembles: dict[int, Ensemble] = {}
         self._ensemble_features: dict[int, set[str]] = {}
         self._imprints: dict[tuple[str, int], float] = {}
         self._synapses: dict[tuple[int, int, int], float] = {}
+        self._peaks: dict[tuple[int, int, int], float] = {}
 
     # -- telling -----------------------------------------------------------
 
@@ -88,10 +104,19 @@ class PlasticNetwork:
         was weak), False when the same fact is merely being repeated.
         """
         self.clock += 1
-        subject_ens = self._recognize(subject, recruit=True)
-        relation_ens = self._recognize(relation, recruit=True)
-        object_ens = self._recognize(object_phrase, recruit=True)
-        assert subject_ens and relation_ens and object_ens
+        self._protected: set[int] = set()
+        try:
+            subject_ens = self._recognize(subject, recruit=True)
+            assert subject_ens
+            self._protected.add(subject_ens.identifier)
+            relation_ens = self._recognize(relation, recruit=True)
+            assert relation_ens
+            self._protected.add(relation_ens.identifier)
+            object_ens = self._recognize(object_phrase, recruit=True)
+            assert object_ens
+            self._protected.add(object_ens.identifier)
+        finally:
+            self._protected = set()
         strength = self._path_strength(subject_ens, object_ens, relation_ens)
         for pre in subject_ens.neurons:
             for post in object_ens.neurons:
@@ -140,24 +165,40 @@ class PlasticNetwork:
         """Let idle time pass: unused pathways decay, dead cells are pruned.
 
         Telling and asking consolidate (strengthen); only idle time decays.
+        Decay is selective: well-consolidated (strong) pathways fade far
+        more slowly than weak one-off traces, so used skills survive while
+        trivia quietly disappears.
         """
         if times < 1:
             raise ValueError("times must be at least 1")
         self.clock += times
-        factor = (1.0 - self.decay_rate) ** times
         self._synapses = {
-            key: weight * factor
+            key: self._decayed(weight, times)
             for key, weight in self._synapses.items()
-            if weight * factor >= self.prune_below
+            if self._decayed(weight, times) >= self.prune_below
         }
         self._imprints = {
-            key: weight * factor
+            key: weight * (1.0 - self.decay_rate * 0.1) ** times
             for key, weight in self._imprints.items()
-            if weight * factor >= self.prune_below
+            if weight * (1.0 - self.decay_rate * 0.1) ** times >= self.prune_below
         }
         self._prune_dead_neurons()
 
+    def _decayed(self, weight: float, times: int) -> float:
+        rate = self.decay_rate * (1.0 - CONSOLIDATION * weight)
+        return weight * (1.0 - rate) ** times
+
     def _prune_dead_neurons(self) -> None:
+        owned = {
+            neuron
+            for ensemble in self._ensembles.values()
+            for neuron in ensemble.neurons
+        }
+        self._synapses = {
+            key: weight
+            for key, weight in self._synapses.items()
+            if key[0] in owned and key[1] in owned
+        }
         connected: set[int] = set()
         for pre, post, _ in self._synapses:
             connected.add(pre)
@@ -223,6 +264,7 @@ class PlasticNetwork:
         return {
             "clock": self.clock,
             "next_neuron": self._next_neuron,
+            "next_ensemble_id": self._next_ensemble_id,
             "ensembles": [
                 {
                     "identifier": e.identifier,
@@ -240,11 +282,16 @@ class PlasticNetwork:
                 {"pre": a, "post": b, "gate": g, "weight": round(w, 6)}
                 for (a, b, g), w in sorted(self._synapses.items())
             ],
+            "peaks": [
+                {"pre": a, "post": b, "gate": g, "peak": round(p, 6)}
+                for (a, b, g), p in sorted(self._peaks.items())
+            ],
         }
 
     def restore(self, payload: dict[str, object]) -> None:
         self.clock = int(payload.get("clock", 0))
         self._next_neuron = int(payload.get("next_neuron", 0))
+        self._next_ensemble_id = int(payload.get("next_ensemble_id", 0))
         self._ensembles = {
             int(item["identifier"]): Ensemble(
                 int(item["identifier"]),
@@ -264,11 +311,20 @@ class PlasticNetwork:
             )
             for item in payload.get("synapses", [])  # type: ignore[union-attr]
         }
+        self._peaks = {
+            (int(item["pre"]), int(item["post"]), int(item["gate"])): float(
+                item["peak"]
+            )
+            for item in payload.get("peaks", [])  # type: ignore[union-attr]
+        }
         self._ensemble_features = {}
         for feature, neuron in self._imprints:
             for identifier, ensemble in self._ensembles.items():
                 if neuron in ensemble.neurons:
                     self._ensemble_features.setdefault(identifier, set()).add(feature)
+        self._next_ensemble_id = max(
+            self._next_ensemble_id, max(self._ensembles, default=-1) + 1
+        )
 
     # -- internals ---------------------------------------------------------
 
@@ -278,6 +334,7 @@ class PlasticNetwork:
             return None
         best: Ensemble | None = None
         best_activation = 0.0
+        runner_up = 0.0
         for ensemble in self._ensembles.values():
             stored = self._ensemble_features.get(ensemble.identifier, set())
             shared = features & stored
@@ -289,18 +346,35 @@ class PlasticNetwork:
             )
             activation = weight / len(features | stored)
             if activation > best_activation:
+                runner_up = best_activation
                 best_activation = activation
                 best = ensemble
-        if best is not None and best_activation >= (RECRUIT_AT if recruit else CUE_AT):
+            elif activation > runner_up:
+                runner_up = activation
+        # a cue must pick ONE memory clearly (pattern separation): a tie
+        # means the phrase is ambiguous, not that either memory is right
+        clear_winner = best is not None and (
+            best_activation > runner_up or runner_up < CUE_AT
+        )
+        if (
+            best is not None
+            and clear_winner
+            and best_activation >= (RECRUIT_AT if recruit else CUE_AT)
+        ):
             return best
         if not recruit:
             return None
         return self._recruit(phrase, features)
 
     def _recruit(self, phrase: str, features: set[str]) -> Ensemble:
+        if self.max_neurons is not None:
+            while self.neuron_count + self.ensemble_size > self.max_neurons:
+                if not self._evict_weakest():
+                    break  # everything left is in use right now
         neurons = tuple(range(self._next_neuron, self._next_neuron + self.ensemble_size))
         self._next_neuron += self.ensemble_size
-        ensemble = Ensemble(len(self._ensembles), neurons, phrase, self.clock)
+        ensemble = Ensemble(self._next_ensemble_id, neurons, phrase, self.clock)
+        self._next_ensemble_id += 1
         self._ensembles[ensemble.identifier] = ensemble
         self._ensemble_features[ensemble.identifier] = set(features)
         for feature in features:
@@ -308,10 +382,64 @@ class PlasticNetwork:
                 self._imprints[(feature, neuron)] = 1.0
         return ensemble
 
+    def _evict_weakest(self) -> bool:
+        """Capacity competition: the weakest idle ensemble gives up its neurons."""
+        candidates = [
+            ensemble
+            for ensemble in self._ensembles.values()
+            if ensemble.identifier not in self._protected
+        ]
+        if not candidates:
+            return False
+
+        def aggregate(ensemble: Ensemble) -> float:
+            own = set(ensemble.neurons)
+            synapse_total = sum(
+                weight
+                for (pre, post, _), weight in self._synapses.items()
+                if pre in own or post in own
+            )
+            gated_total = sum(
+                weight
+                for (_, _, gate), weight in self._synapses.items()
+                if gate == ensemble.identifier
+            )
+            imprint_total = sum(
+                weight
+                for (_, neuron), weight in self._imprints.items()
+                if neuron in own
+            )
+            return synapse_total + gated_total + imprint_total
+
+        victim = min(candidates, key=lambda e: (aggregate(e), -e.born))
+        victim_neurons = set(victim.neurons)
+        del self._ensembles[victim.identifier]
+        self._ensemble_features.pop(victim.identifier, None)
+        self._imprints = {
+            key: weight
+            for key, weight in self._imprints.items()
+            if key[1] not in victim_neurons
+        }
+        self._synapses = {
+            key: weight
+            for key, weight in self._synapses.items()
+            if key[0] not in victim_neurons and key[1] not in victim_neurons
+        }
+        self._peaks = {
+            key: value
+            for key, value in self._peaks.items()
+            if key in self._synapses
+        }
+        self._prune_dead_neurons()
+        return True
+
     def _strengthen(self, pre: int, post: int, gate: int) -> None:
         key = (pre, post, gate)
         weight = self._synapses.get(key, 0.0)
-        self._synapses[key] = weight + self.learning_rate * (1.0 - weight)
+        peak = self._peaks.get(key, 0.0)
+        rate = min(0.95, self.learning_rate * (1.0 + SAVINGS * peak))
+        self._synapses[key] = weight + rate * (1.0 - weight)
+        self._peaks[key] = max(peak, self._synapses[key])
 
     def _strengthen_imprints(self, phrase: str) -> None:
         features = phrase_features(phrase)
@@ -371,4 +499,7 @@ class PlasticNetwork:
                     weight = self._synapses.get(key, 0.0)
                     self._synapses[key] = weight + (
                         USE_BOOST * self.learning_rate * (1.0 - weight)
+                    )
+                    self._peaks[key] = max(
+                        self._peaks.get(key, 0.0), self._synapses[key]
                     )
