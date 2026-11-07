@@ -168,6 +168,86 @@ class PlasticNetwork:
                     self._strengthen(first.neurons[0], second.neurons[0], gate)
         return words
 
+    def stream_learn(self, text: str) -> list[float]:
+        """Learn the way a brain learns: predict, then be surprised.
+
+        Before each word, the network predicts it from what came before.
+        The surprise (1 minus confidence in the truth) is the neuromodulator:
+        the unexpected is learned hard and fast (flashbulb), the expected
+        barely moves (habituation), and a confidently wrong guess is nudged
+        down (prediction error). Returns the surprise felt at each step --
+        the same signal an EEG reads as an event-related response.
+        """
+        words = sequence_words(text) + ["."]
+        relation_ens = self._recognize("comes after", recruit=True)
+        assert relation_ens
+        surprises: list[float] = []
+        ensembles: list[Ensemble] = []
+        for index, word in enumerate(words):
+            ensemble = self._recognize(word, recruit=True)
+            assert ensemble
+            ensembles.append(ensemble)
+            if index == 0:
+                continue
+            context = tuple(words[max(0, index - 3) : index - 1])
+            predicted = self.successors(words[index - 1], context)
+            confidence = 0.0
+            wrong_label = None
+            if predicted:
+                if predicted[0][0] == word:
+                    confidence = predicted[0][1]
+                else:
+                    wrong_label = predicted[0][0]
+            surprise = 1.0 - confidence
+            surprises.append(surprise)
+            # the true path: the unexpected is learned hard, the expected creeps
+            previous = ensembles[index - 1]
+            gates = [relation_ens.identifier]
+            if index >= 2:
+                gates.append(
+                    self._context_gate((words[index - 2], words[index - 1]))
+                )
+            if index >= 3:
+                gates.append(
+                    self._context_gate(
+                        (words[index - 3], words[index - 2], words[index - 1])
+                    )
+                )
+            for synapse_gate in gates:
+                key = (previous.neurons[0], ensemble.neurons[0], synapse_gate)
+                weight = self._synapses.get(key, 0.0)
+                step = (
+                    self.learning_rate
+                    * (1.0 - weight)
+                    * (0.3 + 1.7 * surprise)
+                )
+                new_weight = min(1.0, weight + step)
+                self._peaks[key] = max(self._peaks.get(key, 0.0), new_weight)
+                self._apply(key, new_weight, new_weight - weight)
+            # prediction error: the confident wrong guess is pushed down
+            if wrong_label is not None and surprise > 0.2:
+                wrong_ens = self._recognize(wrong_label, recruit=False)
+                if wrong_ens is not None:
+                    weaken_keys = [
+                        (previous.neurons[0], wrong_ens.neurons[0], synapse_gate)
+                        for synapse_gate in gates
+                    ]
+                    self._weaken(weaken_keys, 0.3 * surprise)
+            self._strengthen_imprints(word, ensemble)
+        return surprises
+
+    def _weaken(self, keys, amount: float) -> None:
+        """Prediction error: nudge wrong pathways down (targeted, not global)."""
+        for key in keys:
+            weight = self._synapses.get(key, 0.0)
+            if weight <= 0.0:
+                continue
+            new_weight = weight * (1.0 - amount)
+            if new_weight < self.prune_below:
+                self._drop_synapses([key])
+            else:
+                self._apply(key, new_weight, new_weight - weight)
+
     def observe_sequence(self, text: str) -> list[str]:
         """Teach the word order of a sentence: w1 then w2 then w3 ...
 
