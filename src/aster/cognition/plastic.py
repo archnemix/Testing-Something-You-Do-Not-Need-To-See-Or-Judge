@@ -55,6 +55,14 @@ def phrase_features(phrase: str) -> set[str]:
     words = [word for word in cleaned.split() if word]
     words = [word for word in words if word not in DETERMINERS] or words
     features: set[str] = set()
+    if phrase.casefold().startswith(("'", '"')) and words:
+        # a quoted literal is its own word ('hello' is not hello): give it
+        # a distinct word-beginning so it is a distinct memory
+        features.add("quote-start")
+        features.add(f"pre:'{words[0][:3]}")
+    if not words and phrase.strip():
+        # symbols are words too (code: ( ) = + ...) -- their own word class
+        features.add(f"pre:|{phrase.strip()[:3]}")
     for word in words:
         features.add(f"len:{min(len(word), 12)}")
         for character in word:
@@ -168,7 +176,7 @@ class PlasticNetwork:
                     self._strengthen(first.neurons[0], second.neurons[0], gate)
         return words
 
-    def stream_learn(self, text: str) -> list[float]:
+    def stream_learn(self, text: str, words: list[str] | None = None) -> list[float]:
         """Learn the way a brain learns: predict, then be surprised.
 
         Before each word, the network predicts it from what came before.
@@ -176,9 +184,10 @@ class PlasticNetwork:
         the unexpected is learned hard and fast (flashbulb), the expected
         barely moves (habituation), and a confidently wrong guess is nudged
         down (prediction error). Returns the surprise felt at each step --
-        the same signal an EEG reads as an event-related response.
+        the same signal an EEG reads as an event-related response. Pass
+        `words` to stream pre-tokenized units (e.g. code tokens).
         """
-        words = sequence_words(text) + ["."]
+        words = (list(words) if words is not None else sequence_words(text)) + ["."]
         relation_ens = self._recognize("comes after", recruit=True)
         assert relation_ens
         surprises: list[float] = []
@@ -254,7 +263,9 @@ class PlasticNetwork:
             else:
                 self._apply(key, new_weight, new_weight - weight)
 
-    def observe_sequence(self, text: str) -> list[str]:
+    def observe_sequence(
+        self, text: str, words: list[str] | None = None
+    ) -> list[str]:
         """Teach the word order of a sentence: w1 then w2 then w3 ...
 
         Word order lives in the same synapses as everything else. Each step
@@ -263,9 +274,10 @@ class PlasticNetwork:
         so the same word can follow different words differently, exactly
         like spoken language, while unused order still decays. Every
         sentence also learns where it ENDS (a final '.' word), so speech
-        stops at the sentence boundary instead of running on.
+        stops at the sentence boundary instead of running on. Pass `words`
+        to teach pre-tokenized units (e.g. code tokens).
         """
-        words = sequence_words(text) + ["."]
+        words = (list(words) if words is not None else sequence_words(text)) + ["."]
         self.clock += 1
         ensembles: list[Ensemble] = []
         for word in words:
