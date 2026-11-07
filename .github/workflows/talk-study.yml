@@ -39,11 +39,11 @@ jobs:
           set -o pipefail
           python -m unittest discover -s tests \
             2>&1 | tee -a action-output/talk-study-tests.log
-      - name: Train the 1M-neuron brain on the full corpus
+      - name: Train the brain configuration (predictive learning, 300k neurons)
         shell: bash
         run: |
           set -o pipefail
-          python -m aster.talk_study 2>&1 | tee -a action-output/talk-study.log
+          python -m aster.brain_run 2>&1 | tee -a action-output/talk-study.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -53,7 +53,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [[ ! -f action-output/talk-study/report.json ]]; then
+          if [[ ! -f action-output/brain-run/report.json && ! -f action-output/talk-study/report.json ]]; then
             echo "No report to commit."
             exit 0
           fi

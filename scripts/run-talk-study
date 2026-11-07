@@ -6,3 +6,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 exec python -m aster.talk_study "$@"
 # (touch: retrigger talk-study on the fixed learning loop)
+# (touch: run the brain configuration at 300k)

@@ -183,14 +183,20 @@ class PlasticNetwork:
         assert relation_ens
         surprises: list[float] = []
         ensembles: list[Ensemble] = []
+        known: dict[str, Ensemble] = {}
         for index, word in enumerate(words):
-            ensemble = self._recognize(word, recruit=True)
-            assert ensemble
+            ensemble = known.get(word)
+            if ensemble is None or ensemble.identifier not in self._ensembles:
+                ensemble = self._recognize(word, recruit=True)
+                assert ensemble
+                known[word] = ensemble
             ensembles.append(ensemble)
             if index == 0:
                 continue
             context = tuple(words[max(0, index - 3) : index - 1])
-            predicted = self.successors(words[index - 1], context)
+            predicted = self.successors(
+                words[index - 1], context, ensemble=ensembles[index - 1]
+            )
             confidence = 0.0
             wrong_label = None
             if predicted:
@@ -330,14 +336,20 @@ class PlasticNetwork:
                 wired += 1
         return wired
 
-    def successors(self, phrase: str, context: tuple[str, ...] = ()) -> list[tuple[str, float]]:
+    def successors(
+        self,
+        phrase: str,
+        context: tuple[str, ...] = (),
+        ensemble: Ensemble | None = None,
+    ) -> list[tuple[str, float]]:
         """Which learned words can follow this one, and how strongly.
 
         With a context of earlier words the answer uses the richest learned
         gate first (this word after those words), backing off to plain
         word order when the context itself was never heard.
         """
-        ensemble = self._recognize(phrase, recruit=False)
+        if ensemble is None:
+            ensemble = self._recognize(phrase, recruit=False)
         if ensemble is None:
             return []
         relation_ens = self._recognize("comes after", recruit=False)
@@ -349,11 +361,7 @@ class PlasticNetwork:
         if context:
             gates.append(self._context_gates.get((context[-1], phrase)))
         gates.append(relation_ens.identifier)
-        owner = {
-            neuron: ens.identifier
-            for ens in self._ensembles.values()
-            for neuron in ens.neurons
-        }
+        owner = self._neuron_owner
         for gate in gates:
             if gate is None:
                 continue
