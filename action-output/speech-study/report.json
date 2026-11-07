@@ -1,0 +1,337 @@
+{
+  "runs": [
+    {
+      "tier": "small",
+      "budget": 5000,
+      "taught": {
+        "definitions": 200,
+        "sentences": 800,
+        "words_total": 2234
+      },
+      "neurons": 4998,
+      "synapses": 2734,
+      "learning": {
+        "definitions_seconds": 0.1,
+        "sentences_seconds": 0.5,
+        "tick_seconds": 0.0
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        }
+      },
+      "next_word_accuracy": 0.0,
+      "sample_sentences": {
+        "life": "Life.",
+        "world": "World.",
+        "time": "Time nine times.",
+        "man": "Man.",
+        "night": "Night."
+      },
+      "run_seconds": 2.9
+    },
+    {
+      "tier": "small",
+      "budget": 50000,
+      "taught": {
+        "definitions": 200,
+        "sentences": 800,
+        "words_total": 2234
+      },
+      "neurons": 7224,
+      "synapses": 16533,
+      "learning": {
+        "definitions_seconds": 0.1,
+        "sentences_seconds": 0.3,
+        "tick_seconds": 0.1
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        }
+      },
+      "next_word_accuracy": 0.055,
+      "sample_sentences": {
+        "life": "Life at three and twenty a period when if a man devour.",
+        "world": "World let him become a fool that he may be wise in this world but also in that.",
+        "time": "Time thence hurried back to fire on his head in your lap camerado.",
+        "man": "Man is but the stamp of sorrow in the signers.",
+        "night": "Night."
+      },
+      "run_seconds": 3.0
+    },
+    {
+      "tier": "small",
+      "budget": 100000,
+      "taught": {
+        "definitions": 200,
+        "sentences": 800,
+        "words_total": 2234
+      },
+      "neurons": 7224,
+      "synapses": 16533,
+      "learning": {
+        "definitions_seconds": 0.1,
+        "sentences_seconds": 0.3,
+        "tick_seconds": 0.1
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        }
+      },
+      "next_word_accuracy": 0.055,
+      "sample_sentences": {
+        "life": "Life at three and twenty a period when if a man devour.",
+        "world": "World let him become a fool that he may be wise in this world but also in that.",
+        "time": "Time thence hurried back to fire on his head in your lap camerado.",
+        "man": "Man is but the stamp of sorrow in the signers.",
+        "night": "Night."
+      },
+      "run_seconds": 3.0
+    },
+    {
+      "tier": "large",
+      "budget": 5000,
+      "taught": {
+        "definitions": 3000,
+        "sentences": 12000,
+        "words_total": 14206
+      },
+      "neurons": 4998,
+      "synapses": 7550,
+      "learning": {
+        "definitions_seconds": 12.0,
+        "sentences_seconds": 15.9,
+        "tick_seconds": 0.1
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 0,
+          "accuracy": 0.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 0,
+          "accuracy": 0.0
+        }
+      },
+      "next_word_accuracy": 0.0,
+      "sample_sentences": {
+        "life": "Life.",
+        "world": "World.",
+        "time": "Time.",
+        "man": "Man.",
+        "night": "Night."
+      },
+      "run_seconds": 127.4
+    },
+    {
+      "tier": "large",
+      "budget": 50000,
+      "taught": {
+        "definitions": 3000,
+        "sentences": 12000,
+        "words_total": 14206
+      },
+      "neurons": 49305,
+      "synapses": 219402,
+      "learning": {
+        "definitions_seconds": 20.2,
+        "sentences_seconds": 27.5,
+        "tick_seconds": 1.3
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        }
+      },
+      "next_word_accuracy": 0.13,
+      "sample_sentences": {
+        "life": "Life and death your analogies.",
+        "world": "World of which he himself and his best of it as many others have done before them so.",
+        "time": "Time of the last day of the first quarter of.",
+        "man": "Man and his house even a man and his house even a man.",
+        "night": "Night and i will bring him that he might be with him and the publicans justified in their."
+      },
+      "run_seconds": 152.4
+    },
+    {
+      "tier": "large",
+      "budget": 100000,
+      "taught": {
+        "definitions": 3000,
+        "sentences": 12000,
+        "words_total": 14206
+      },
+      "neurons": 49305,
+      "synapses": 219402,
+      "learning": {
+        "definitions_seconds": 17.8,
+        "sentences_seconds": 25.3,
+        "tick_seconds": 1.3
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 12,
+          "accuracy": 1.0
+        }
+      },
+      "next_word_accuracy": 0.13,
+      "sample_sentences": {
+        "life": "Life and death your analogies.",
+        "world": "World of which he himself and his best of it as many others have done before them so.",
+        "time": "Time of the last day of the first quarter of.",
+        "man": "Man and his house even a man and his house even a man.",
+        "night": "Night and i will bring him that he might be with him and the publicans justified in their."
+      },
+      "run_seconds": 150.5
+    },
+    {
+      "tier": "overflow",
+      "budget": 5000,
+      "taught": {
+        "definitions": 6000,
+        "sentences": 20000,
+        "words_total": 20399
+      },
+      "neurons": 4998,
+      "synapses": 7581,
+      "learning": {
+        "definitions_seconds": 24.8,
+        "sentences_seconds": 26.1,
+        "tick_seconds": 0.1
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 0,
+          "accuracy": 0.0
+        },
+        "late": {
+          "asked": 12,
+          "answered": 0,
+          "accuracy": 0.0
+        }
+      },
+      "next_word_accuracy": 0.0,
+      "sample_sentences": {
+        "life": "Life.",
+        "world": "World.",
+        "time": "Time.",
+        "man": "Man.",
+        "night": "Night."
+      },
+      "run_seconds": 292.2
+    },
+    {
+      "tier": "overflow",
+      "budget": 50000,
+      "taught": {
+        "definitions": 6000,
+        "sentences": 20000,
+        "words_total": 20399
+      },
+      "neurons": 49998,
+      "synapses": 320251,
+      "learning": {
+        "definitions_seconds": 86.5,
+        "sentences_seconds": 216.6,
+        "tick_seconds": 1.8
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 11,
+          "accuracy": 0.917
+        },
+        "late": {
+          "asked": 12,
+          "answered": 11,
+          "accuracy": 0.917
+        }
+      },
+      "next_word_accuracy": 0.15,
+      "sample_sentences": {
+        "life": "Life was just enough touched on the other side of the sea and relieved.",
+        "world": "World makes you want to do such a man gives me cold last winter when she was the.",
+        "time": "Time to lose whales by the way and how the sun moon stars dart on and.",
+        "man": "Man in a blue coat and scarlet waistcoat to whom he was still more attached to woman friend.",
+        "night": "Night on purpose to singing his as it should be said mr musgrove no longer under the first."
+      },
+      "run_seconds": 554.7
+    },
+    {
+      "tier": "overflow",
+      "budget": 100000,
+      "taught": {
+        "definitions": 6000,
+        "sentences": 20000,
+        "words_total": 20399
+      },
+      "neurons": 74463,
+      "synapses": 360099,
+      "learning": {
+        "definitions_seconds": 80.5,
+        "sentences_seconds": 78.0,
+        "tick_seconds": 2.1
+      },
+      "meaning_quiz": {
+        "early": {
+          "asked": 12,
+          "answered": 11,
+          "accuracy": 0.917
+        },
+        "late": {
+          "asked": 12,
+          "answered": 11,
+          "accuracy": 0.917
+        }
+      },
+      "next_word_accuracy": 0.165,
+      "sample_sentences": {
+        "life": "Life and the sight of the lord and for the.",
+        "world": "World the streets.",
+        "time": "Time and the idea of placing me upon the earth when lot entered into zoar.",
+        "man": "Man that is clean and is not in word but in power of god and his doctrine be.",
+        "night": "Night and said i will not again pass by them any more there was a great earthquake such."
+      },
+      "run_seconds": 420.7
+    }
+  ]
+}

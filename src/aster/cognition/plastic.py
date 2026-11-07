@@ -101,7 +101,10 @@ class PlasticNetwork:
         self._imprints: dict[int, dict[str, float]] = {}
         self._synapses: dict[tuple[int, int, int], float] = {}
         self._outgoing: dict[int, set[tuple[int, int]]] = {}
+        self._incoming: dict[int, set[tuple[int, int]]] = {}
         self._peaks: dict[tuple[int, int, int], float] = {}
+        self._neuron_owner: dict[int, int] = {}
+        self._strength: dict[int, float] = {}
         self._context_gates: dict[tuple[str, ...], int] = {}
         self._next_context_gate = -1
 
@@ -189,7 +192,7 @@ class PlasticNetwork:
                     ensemble = self._recognize(word, recruit=True)
                     assert ensemble
                     known[word] = ensemble
-        relation_ens = self._recognize("comes after", recruit=False)
+        relation_ens = self._recognize("comes after", recruit=True)
         assert relation_ens
         wired = 0
         for words in parsed:
@@ -548,6 +551,7 @@ class PlasticNetwork:
             self._feature_ensembles.setdefault(feature, set()).add(ensemble.identifier)
         for neuron in neurons:
             self._imprints[neuron] = {feature: 1.0 for feature in features}
+            self._neuron_owner[neuron] = ensemble.identifier
         return ensemble
 
     def _evict_weakest(self) -> bool:
@@ -560,27 +564,15 @@ class PlasticNetwork:
         if not candidates:
             return False
 
-        # importance = strength of what it knows (its connections), summed
-        # in one pass; perception is excluded so short names are not weaker
-        totals: dict[int, float] = {e.identifier: 0.0 for e in candidates}
-        owner = {
-            neuron: ensemble.identifier
-            for ensemble in self._ensembles.values()
-            for neuron in ensemble.neurons
-        }
-        for (pre, post, gate), weight in self._synapses.items():
-            touching = {owner.get(pre), owner.get(post)} - {None}
-            for identifier in touching:
-                if identifier in totals:
-                    totals[identifier] += weight
-            if gate in totals:
-                totals[gate] += weight
-
+        # importance = strength of what it knows (its connections), kept
+        # running; perception is excluded so short names are not weaker
         victim = min(
-            candidates, key=lambda e: (totals[e.identifier], -e.born)
+            candidates,
+            key=lambda e: (self._strength.get(e.identifier, 0.0), -e.born),
         )
         victim_neurons = set(victim.neurons)
         del self._ensembles[victim.identifier]
+        self._strength.pop(victim.identifier, None)
         features = self._ensemble_features.pop(victim.identifier, set())
         for feature in features:
             holders = self._feature_ensembles.get(feature)
@@ -590,17 +582,19 @@ class PlasticNetwork:
                     self._feature_ensembles.pop(feature, None)
         for neuron in victim_neurons:
             self._imprints.pop(neuron, None)
-        dropped = {
-            key
-            for key in self._synapses
-            if key[0] in victim_neurons or key[1] in victim_neurons
-        }
+            self._neuron_owner.pop(neuron, None)
+        dropped: set[tuple[int, int, int]] = set()
+        for neuron in victim_neurons:
+            for post, gate in self._outgoing.get(neuron, ()):
+                dropped.add((neuron, post, gate))
+            for pre, gate in self._incoming.get(neuron, ()):
+                dropped.add((pre, neuron, gate))
         self._drop_synapses(dropped)
         return True
 
     def _drop_synapses(self, keys) -> None:
         for key in keys:
-            self._synapses.pop(key, None)
+            weight = self._synapses.pop(key, 0.0)
             self._peaks.pop(key, None)
             pre, post, gate = key
             out = self._outgoing.get(pre)
@@ -608,27 +602,76 @@ class PlasticNetwork:
                 out.discard((post, gate))
                 if not out:
                     self._outgoing.pop(pre, None)
+            incoming = self._incoming.get(post)
+            if incoming is not None:
+                incoming.discard((pre, gate))
+                if not incoming:
+                    self._incoming.pop(post, None)
+            if weight:
+                touching = {
+                    self._neuron_owner.get(pre), self._neuron_owner.get(post)
+                } - {None}
+                for identifier in touching:
+                    self._strength[identifier] = (
+                        self._strength.get(identifier, 0.0) - weight
+                    )
+                if gate in self._strength:
+                    self._strength[gate] -= weight
+
+    def _apply(self, key: tuple[int, int, int], weight: float, delta: float) -> None:
+        pre, post, gate = key
+        self._synapses[key] = weight
+        self._outgoing.setdefault(pre, set()).add((post, gate))
+        self._incoming.setdefault(post, set()).add((pre, gate))
+        if delta:
+            touching = {
+                self._neuron_owner.get(pre), self._neuron_owner.get(post)
+            } - {None}
+            for identifier in touching:
+                self._strength[identifier] = (
+                    self._strength.get(identifier, 0.0) + delta
+                )
+            if gate in self._strength:
+                self._strength[gate] += delta
 
     def _reindex(self) -> None:
         """Rebuild the lookup indexes from the synapses and ensembles."""
         self._outgoing = {}
+        self._incoming = {}
         for pre, post, gate in self._synapses:
             self._outgoing.setdefault(pre, set()).add((post, gate))
+            self._incoming.setdefault(post, set()).add((pre, gate))
         self._feature_ensembles = {}
         for identifier, features in self._ensemble_features.items():
             if identifier not in self._ensembles:
                 continue
             for feature in features:
                 self._feature_ensembles.setdefault(feature, set()).add(identifier)
+        self._neuron_owner = {
+            neuron: ensemble.identifier
+            for ensemble in self._ensembles.values()
+            for neuron in ensemble.neurons
+        }
+        self._strength = {}
+        for (pre, post, gate), weight in self._synapses.items():
+            touching = {
+                self._neuron_owner.get(pre), self._neuron_owner.get(post)
+            } - {None}
+            for identifier in touching:
+                self._strength[identifier] = (
+                    self._strength.get(identifier, 0.0) + weight
+                )
+            if gate in self._ensembles:
+                self._strength[gate] = self._strength.get(gate, 0.0) + weight
 
     def _strengthen(self, pre: int, post: int, gate: int) -> None:
         key = (pre, post, gate)
         weight = self._synapses.get(key, 0.0)
         peak = self._peaks.get(key, 0.0)
         rate = min(0.95, self.learning_rate * (1.0 + SAVINGS * peak))
-        self._synapses[key] = weight + rate * (1.0 - weight)
-        self._peaks[key] = max(peak, self._synapses[key])
-        self._outgoing.setdefault(pre, set()).add((post, gate))
+        new_weight = weight + rate * (1.0 - weight)
+        self._peaks[key] = max(peak, new_weight)
+        self._apply(key, new_weight, new_weight - weight)
 
     def _strengthen_imprints(self, phrase: str, ensemble: Ensemble) -> None:
         """Repetition re-strengthens the perception of this memory itself."""
@@ -691,10 +734,10 @@ class PlasticNetwork:
                 for post in answer_ens.neurons:
                     key = (pre, post, gate)
                     weight = self._synapses.get(key, 0.0)
-                    self._synapses[key] = weight + (
+                    new_weight = weight + (
                         USE_BOOST * self.learning_rate * (1.0 - weight)
                     )
                     self._peaks[key] = max(
-                        self._peaks.get(key, 0.0), self._synapses[key]
+                        self._peaks.get(key, 0.0), new_weight
                     )
-                    self._outgoing.setdefault(pre, set()).add((post, gate))
+                    self._apply(key, new_weight, new_weight - weight)

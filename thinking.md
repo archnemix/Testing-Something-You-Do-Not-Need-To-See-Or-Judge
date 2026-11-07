@@ -1,5 +1,24 @@
 # Engineering journal
 
+## 2026-11-07 (5) — It speaks: sentences fired from neurons, on real text
+
+Set out to kill the `{subject} {relation} {object}` template and let it
+talk like a person. Word order is now wired into the SAME synapses as
+everything else, under plain, previous-word-pair and previous-word-triple
+gates (n-gram order with backoff, as weights that decay and compete -- and
+the context gates came from a real failure: the walk once answered "what
+does print mean?" with "Print means asking about a word..." because six
+curriculum lines shared "means asking"; context gates separate speakers'
+patterns cleanly). `form_sentence` is winner-take-all walking, and the
+proofs are recombination (forms never-taught sentences), weight-driven
+choice, and output that decays. Taught it real English: 224,200 Project
+Gutenberg sentences and 111,087 WordNet definitions at 5k/50k/100k neuron
+budgets. It speaks real definitions as sentences ("Cutin means biochemistry
+waxy transparent material ..."). Overflow answer: give it more than fits
+and the weakest earlier things get pushed out -- at 5k with large data,
+everything it was asked is gone (0.00); at 50k+ the same data is perfect
+(1.00); the report shows the gradient and sample speech at every size.
+
 ## 2026-11-06 (4) — English, Python, and proof that learning is permanent
 
 The user's next step: a big conversation. Teach it English, confirm it knows English, talk about Python and how to use it, then unload the model and reload it from disk — if it really learned, the learning must be permanent — then ask about Python again. Then do the whole cycle once more with another skill, growing the brain from 5k to 100k neurons, timing every phase, and keeping the replies so they can be checked. Built `aster/case_study.py`: curricula for english (68 lessons), python (59), music (24), plus a lexicon drill of 1000 real English words (web2 list via `english-words`), all through the same conversation channel. The sweep ran 5k/10k/25k/50k/100k: every accuracy 1.00 at every stage in every budget, and the permanence proof is exact — pathway strengths are identical across save/unload/reload (measured around the reload, not across ticking quizzes). Timings at 100k: english 0.4s, the 1000-word lexicon 77s, python 7.4s, music 2.7s, each reload ~6-8s; the brain settled at 3,858 neurons / 10,305 synapses — every budget from 5k up holds it fully, and bigger budgets cost nothing in time.

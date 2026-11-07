@@ -138,6 +138,43 @@ lexicon 68.6 s (1,000 turns), teach Python 9.7 s (59 turns), teach music
 the honest definition of "learned permanently" here: the saved snapshot
 is the long-term memory, and the reload proves it carries everything.
 
+## How it talks: sentences are pathways
+
+Speech is not a template with slots. Word order lives in the same synapses
+as everything else. `observe_sequence("the cat sat on the mat")` wires each
+word ensemble to the next under three gates: the plain relation *comes
+after*, the previous word pair, and the previous word triple -- ordinary
+`(pre, post, gate)` synapses, with negative gate codes standing for word
+contexts. This is n-gram order with backoff, realized in the same weights
+that hold the world model: those links decay when unused, compete under
+capacity, and strengthen when practiced.
+
+`form_sentence` (in `src/aster/speech.py`) then simply **talks**: starting
+from any word, activation walks the links; at each step the strongest next
+word wins (winner-take-all) and continues from its own learned context.
+The sentence that comes out IS the chain of neurons that fired. The tests
+pin the consequences: recombination (teach "the cat sat on the mat" 3x and
+"the dog sat on the rug" 1x, start from "the dog sat on the" -- it says
+**"the dog sat on the mat"**, never taught as a sentence), repetition moves
+the output, and decay changes it -- there is no fixed shape to fall back on.
+
+`Speaker` adds conversation on top: statements are taught (triple + word
+order) and acknowledged by a *formed* sentence ("Okay i will remember
+that."); questions are answered by speaking the recalled definition's own
+learned sentence ("Cutin means biochemistry waxy transparent material ...");
+free talk just generates from the words you used.
+
+## The speech study: real text, three capacities, and overflow
+
+`src/aster/speech_study.py` teaches from real English -- Project Gutenberg
+sentences (224,200 available) and WordNet definitions (111,087 available),
+downloaded via `gh api` into `/tmp` (not committed) -- at budgets of 5k,
+50k, and 100k neurons, on datasets small, large, and **larger than any
+budget can hold**. The report (`action-output/speech-study/report.json`)
+records meaning-quiz accuracy (asked early vs late in teaching), next-word
+accuracy on held-out sentences, and sample sentences the network forms on
+its own.
+
 ## Install, run, test
 
 ```sh

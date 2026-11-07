@@ -91,12 +91,12 @@ class Speaker:
             is_new = self.net.observe(fact.subject, fact.relation, fact.object)
             self.net.observe_sequence(text)
             start = sequence_words(ACK_NEW if is_new else ACK_OLD)[:1]
-            return render(form_sentence(self.net, start))
+            return render(form_sentence(self.net, start, max_words=5))
         if parsed.kind is InputKind.QUESTION and parsed.subject and parsed.relation:
             answers = self.net.retrieve(parsed.subject, parsed.relation)
             if answers:
                 return render(self._answer_sentence(parsed.subject, answers[0][0]))
-            return render(form_sentence(self.net, sequence_words(UNKNOWN)[:1]))
+            return render(form_sentence(self.net, sequence_words(UNKNOWN)[:1], max_words=5))
         return render(self._talk(text))
 
     def _answer_sentence(self, subject: str, answer: str) -> list[str]:
@@ -118,7 +118,7 @@ class Speaker:
                 best = formed
             if len(best) >= 6:
                 break
-        return best if best else form_sentence(self.net, sequence_words(UNKNOWN)[:1])
+        return best if best else form_sentence(self.net, sequence_words(UNKNOWN)[:1], max_words=5)
 
 
 def main() -> None:
