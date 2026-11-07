@@ -139,6 +139,7 @@ fade, and relearns a fallen skill completely when it is shown again
 | New skill lands mid-conversation, old one survives | `test_second_skill_talked_in_mid_conversation_lands_and_first_survives` |
 | Experience and talk shape one shared brain | `test_experience_and_talk_shape_one_shared_brain` |
 | Fallen skills relearn under capacity pressure | `test_a_fallen_skill_relearns_quickly_in_a_tight_brain` |
+| Learning is permanent across unload/reload | `test_english_python_music_survive_reloads` |
 | Structural growth | `test_network_physically_grows_when_told_new_things` |
 | No padding, no context window | `test_variable_length_stream_needs_no_padding_or_window` |
 | Logic by firing (transitive, cyclic) | `test_transitive_chains_resolve_and_cycles_do_not_loop` |

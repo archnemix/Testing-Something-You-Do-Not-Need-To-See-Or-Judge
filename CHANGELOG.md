@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-06 (4) — English, Python, music: permanent learning proven across reloads
+
+- `src/aster/case_study.py`: the long conversation — teach English (68
+  lessons + a 1000-word real-English lexicon drill), confirm it, teach
+  Python (59 lessons: syntax, concepts, usage), unload the model and
+  reload it from disk, ask Python again; then the cycle repeats with
+  music. Every phase timed, every reply recorded
+  (`action-output/case-study/report.json`).
+- Capacity sweep 5k -> 100k neurons: all accuracies 1.00 at every stage
+  in every budget; learning is permanent (strengths byte-identical
+  across save/unload/reload); per-phase timings recorded (100k run:
+  english 0.4s, lexicon 77s, python 7.4s, music 2.7s, reload ~6-8s).
+- Study fixes: learning runs in-memory with saving at unload (per-turn
+  saving was re-serializing the whole memory after every reply), and a
+  guard test requires every teaching line to parse as a teachable fact
+  (seven lines with unsupported verbs were silently not taught). 65
+  tests green.
+
 ## 2026-11-06 (3) — Skills through conversation: the world model is the model
 
 - `src/aster/skills.py`: the requested protocol at study scale — six

@@ -111,6 +111,33 @@ expected wording appears in the agent's reply; every question and every
 teaching turn goes through the same conversation channel
 (`Aster.respond`), and the knowledge lives only in pathway strengths.
 
+## The long conversation: English, Python, music (2026-11-06)
+
+Protocol (`python -m aster.case_study`, report in
+`action-output/case-study/report.json`): teach English so the agent can
+speak and be understood (68 lessons plus a lexicon drill of 1,000 real
+English words from the web2 list), confirm it, teach Python and how to
+use it (59 lessons: syntax, concepts, usage), then **unload the model and
+reload it from disk** — what was learned must be permanent — and ask
+Python again. The whole cycle repeats with a third skill (music, 24
+lessons). Every phase is timed and every reply is recorded in the report.
+The study runs at five capacities: 5k, 10k, 25k, 50k, 100k neurons.
+
+Results across all five budgets: **every accuracy is 1.00 at every
+stage** — English, lexicon, Python, music, all quizzes after both
+reloads, all final quizzes. Permanence is exact: pathway strengths are
+byte-identical across save/unload/reload (e.g. 0.513602 / 0.671395 /
+0.673326 before and after). The brain settles at 3,891 neurons and
+10,359 synapses; every budget from 5k up holds the whole curriculum, and
+larger budgets cost nothing in time (whole run 100-113 s regardless).
+
+Timings (100k run): teach English 0.2 s (68 turns), teach the 1,000-word
+lexicon 68.6 s (1,000 turns), teach Python 9.7 s (59 turns), teach music
+2.7 s (24 turns); quizzes 0.7-2.4 s each; save+unload+reload 5.9 s and
+6.9 s. Learning is in-memory; saving happens at unload — that is also
+the honest definition of "learned permanently" here: the saved snapshot
+is the long-term memory, and the reload proves it carries everything.
+
 ## Install, run, test
 
 ```sh

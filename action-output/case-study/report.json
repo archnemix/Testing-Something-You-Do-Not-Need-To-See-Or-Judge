@@ -1,0 +1,2316 @@
+{
+  "study": "teach english, confirm, teach python, unload/reload, ask python again, teach music, unload/reload again -- capacities 5k to 100k",
+  "runs": [
+    {
+      "max_neurons": 5000,
+      "lexicon_size": 1000,
+      "phases": [
+        {
+          "phase": "teach english",
+          "seconds": 0.474,
+          "turns": 68
+        },
+        {
+          "phase": "teach english lexicon",
+          "seconds": 69.151,
+          "turns": 1000
+        },
+        {
+          "phase": "quiz english",
+          "seconds": 2.142,
+          "turns": 20
+        },
+        {
+          "phase": "quiz lexicon",
+          "seconds": 1.764,
+          "turns": 30
+        },
+        {
+          "phase": "teach python",
+          "seconds": 7.356,
+          "turns": 59
+        },
+        {
+          "phase": "quiz python",
+          "seconds": 1.177,
+          "turns": 18
+        },
+        {
+          "phase": "quiz english again",
+          "seconds": 1.552,
+          "turns": 20
+        },
+        {
+          "phase": "save, unload, reload",
+          "seconds": 6.392
+        },
+        {
+          "phase": "quiz english after reload",
+          "seconds": 1.497,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python after reload",
+          "seconds": 0.983,
+          "turns": 18
+        },
+        {
+          "phase": "quiz lexicon after reload",
+          "seconds": 1.851,
+          "turns": 30
+        },
+        {
+          "phase": "teach music",
+          "seconds": 2.642,
+          "turns": 24
+        },
+        {
+          "phase": "quiz music",
+          "seconds": 0.675,
+          "turns": 12
+        },
+        {
+          "phase": "save, unload, reload (2)",
+          "seconds": 7.045
+        },
+        {
+          "phase": "quiz english final",
+          "seconds": 1.272,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python final",
+          "seconds": 1.114,
+          "turns": 18
+        },
+        {
+          "phase": "quiz music final",
+          "seconds": 0.67,
+          "turns": 12
+        },
+        {
+          "phase": "quiz lexicon final",
+          "seconds": 2.019,
+          "turns": 30
+        }
+      ],
+      "accuracies": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0,
+        "english_after_reload": 1.0,
+        "python_after_reload": 1.0,
+        "lexicon_after_reload": 1.0,
+        "music": 1.0,
+        "english_final": 1.0,
+        "python_final": 1.0,
+        "music_final": 1.0,
+        "lexicon_final": 1.0
+      },
+      "before_reload": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0
+      },
+      "strengths_before_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "strengths_after_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "permanent": true,
+      "neurons": 3891,
+      "synapses": 10359,
+      "known_facts": 92,
+      "turns": 80,
+      "transcript": [
+        {
+          "input": "[taught english: 68 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "[taught lexicon: 1000 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        }
+      ]
+    },
+    {
+      "max_neurons": 10000,
+      "lexicon_size": 1000,
+      "phases": [
+        {
+          "phase": "teach english",
+          "seconds": 0.227,
+          "turns": 68
+        },
+        {
+          "phase": "teach english lexicon",
+          "seconds": 72.483,
+          "turns": 1000
+        },
+        {
+          "phase": "quiz english",
+          "seconds": 1.283,
+          "turns": 20
+        },
+        {
+          "phase": "quiz lexicon",
+          "seconds": 2.175,
+          "turns": 30
+        },
+        {
+          "phase": "teach python",
+          "seconds": 8.069,
+          "turns": 59
+        },
+        {
+          "phase": "quiz python",
+          "seconds": 1.284,
+          "turns": 18
+        },
+        {
+          "phase": "quiz english again",
+          "seconds": 1.53,
+          "turns": 20
+        },
+        {
+          "phase": "save, unload, reload",
+          "seconds": 5.714
+        },
+        {
+          "phase": "quiz english after reload",
+          "seconds": 1.149,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python after reload",
+          "seconds": 1.188,
+          "turns": 18
+        },
+        {
+          "phase": "quiz lexicon after reload",
+          "seconds": 1.786,
+          "turns": 30
+        },
+        {
+          "phase": "teach music",
+          "seconds": 2.865,
+          "turns": 24
+        },
+        {
+          "phase": "quiz music",
+          "seconds": 0.721,
+          "turns": 12
+        },
+        {
+          "phase": "save, unload, reload (2)",
+          "seconds": 6.177
+        },
+        {
+          "phase": "quiz english final",
+          "seconds": 1.192,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python final",
+          "seconds": 1.091,
+          "turns": 18
+        },
+        {
+          "phase": "quiz music final",
+          "seconds": 0.798,
+          "turns": 12
+        },
+        {
+          "phase": "quiz lexicon final",
+          "seconds": 1.848,
+          "turns": 30
+        }
+      ],
+      "accuracies": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0,
+        "english_after_reload": 1.0,
+        "python_after_reload": 1.0,
+        "lexicon_after_reload": 1.0,
+        "music": 1.0,
+        "english_final": 1.0,
+        "python_final": 1.0,
+        "music_final": 1.0,
+        "lexicon_final": 1.0
+      },
+      "before_reload": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0
+      },
+      "strengths_before_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "strengths_after_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "permanent": true,
+      "neurons": 3891,
+      "synapses": 10359,
+      "known_facts": 92,
+      "turns": 80,
+      "transcript": [
+        {
+          "input": "[taught english: 68 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "[taught lexicon: 1000 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        }
+      ]
+    },
+    {
+      "max_neurons": 25000,
+      "lexicon_size": 1000,
+      "phases": [
+        {
+          "phase": "teach english",
+          "seconds": 0.23,
+          "turns": 68
+        },
+        {
+          "phase": "teach english lexicon",
+          "seconds": 62.047,
+          "turns": 1000
+        },
+        {
+          "phase": "quiz english",
+          "seconds": 1.133,
+          "turns": 20
+        },
+        {
+          "phase": "quiz lexicon",
+          "seconds": 1.879,
+          "turns": 30
+        },
+        {
+          "phase": "teach python",
+          "seconds": 7.091,
+          "turns": 59
+        },
+        {
+          "phase": "quiz python",
+          "seconds": 1.257,
+          "turns": 18
+        },
+        {
+          "phase": "quiz english again",
+          "seconds": 1.376,
+          "turns": 20
+        },
+        {
+          "phase": "save, unload, reload",
+          "seconds": 5.635
+        },
+        {
+          "phase": "quiz english after reload",
+          "seconds": 1.157,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python after reload",
+          "seconds": 1.056,
+          "turns": 18
+        },
+        {
+          "phase": "quiz lexicon after reload",
+          "seconds": 2.019,
+          "turns": 30
+        },
+        {
+          "phase": "teach music",
+          "seconds": 2.514,
+          "turns": 24
+        },
+        {
+          "phase": "quiz music",
+          "seconds": 0.751,
+          "turns": 12
+        },
+        {
+          "phase": "save, unload, reload (2)",
+          "seconds": 6.151
+        },
+        {
+          "phase": "quiz english final",
+          "seconds": 1.132,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python final",
+          "seconds": 0.997,
+          "turns": 18
+        },
+        {
+          "phase": "quiz music final",
+          "seconds": 0.8,
+          "turns": 12
+        },
+        {
+          "phase": "quiz lexicon final",
+          "seconds": 1.868,
+          "turns": 30
+        }
+      ],
+      "accuracies": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0,
+        "english_after_reload": 1.0,
+        "python_after_reload": 1.0,
+        "lexicon_after_reload": 1.0,
+        "music": 1.0,
+        "english_final": 1.0,
+        "python_final": 1.0,
+        "music_final": 1.0,
+        "lexicon_final": 1.0
+      },
+      "before_reload": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0
+      },
+      "strengths_before_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "strengths_after_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "permanent": true,
+      "neurons": 3891,
+      "synapses": 10359,
+      "known_facts": 92,
+      "turns": 80,
+      "transcript": [
+        {
+          "input": "[taught english: 68 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "[taught lexicon: 1000 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        }
+      ]
+    },
+    {
+      "max_neurons": 50000,
+      "lexicon_size": 1000,
+      "phases": [
+        {
+          "phase": "teach english",
+          "seconds": 0.224,
+          "turns": 68
+        },
+        {
+          "phase": "teach english lexicon",
+          "seconds": 70.753,
+          "turns": 1000
+        },
+        {
+          "phase": "quiz english",
+          "seconds": 1.233,
+          "turns": 20
+        },
+        {
+          "phase": "quiz lexicon",
+          "seconds": 2.306,
+          "turns": 30
+        },
+        {
+          "phase": "teach python",
+          "seconds": 7.566,
+          "turns": 59
+        },
+        {
+          "phase": "quiz python",
+          "seconds": 1.523,
+          "turns": 18
+        },
+        {
+          "phase": "quiz english again",
+          "seconds": 1.573,
+          "turns": 20
+        },
+        {
+          "phase": "save, unload, reload",
+          "seconds": 7.382
+        },
+        {
+          "phase": "quiz english after reload",
+          "seconds": 1.24,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python after reload",
+          "seconds": 1.092,
+          "turns": 18
+        },
+        {
+          "phase": "quiz lexicon after reload",
+          "seconds": 2.501,
+          "turns": 30
+        },
+        {
+          "phase": "teach music",
+          "seconds": 3.132,
+          "turns": 24
+        },
+        {
+          "phase": "quiz music",
+          "seconds": 0.888,
+          "turns": 12
+        },
+        {
+          "phase": "save, unload, reload (2)",
+          "seconds": 6.36
+        },
+        {
+          "phase": "quiz english final",
+          "seconds": 1.121,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python final",
+          "seconds": 1.045,
+          "turns": 18
+        },
+        {
+          "phase": "quiz music final",
+          "seconds": 0.688,
+          "turns": 12
+        },
+        {
+          "phase": "quiz lexicon final",
+          "seconds": 1.879,
+          "turns": 30
+        }
+      ],
+      "accuracies": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0,
+        "english_after_reload": 1.0,
+        "python_after_reload": 1.0,
+        "lexicon_after_reload": 1.0,
+        "music": 1.0,
+        "english_final": 1.0,
+        "python_final": 1.0,
+        "music_final": 1.0,
+        "lexicon_final": 1.0
+      },
+      "before_reload": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0
+      },
+      "strengths_before_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "strengths_after_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "permanent": true,
+      "neurons": 3891,
+      "synapses": 10359,
+      "known_facts": 92,
+      "turns": 80,
+      "transcript": [
+        {
+          "input": "[taught english: 68 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "[taught lexicon: 1000 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        }
+      ]
+    },
+    {
+      "max_neurons": 100000,
+      "lexicon_size": 1000,
+      "phases": [
+        {
+          "phase": "teach english",
+          "seconds": 0.203,
+          "turns": 68
+        },
+        {
+          "phase": "teach english lexicon",
+          "seconds": 68.576,
+          "turns": 1000
+        },
+        {
+          "phase": "quiz english",
+          "seconds": 1.438,
+          "turns": 20
+        },
+        {
+          "phase": "quiz lexicon",
+          "seconds": 2.442,
+          "turns": 30
+        },
+        {
+          "phase": "teach python",
+          "seconds": 9.653,
+          "turns": 59
+        },
+        {
+          "phase": "quiz python",
+          "seconds": 1.232,
+          "turns": 18
+        },
+        {
+          "phase": "quiz english again",
+          "seconds": 1.51,
+          "turns": 20
+        },
+        {
+          "phase": "save, unload, reload",
+          "seconds": 5.908
+        },
+        {
+          "phase": "quiz english after reload",
+          "seconds": 1.235,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python after reload",
+          "seconds": 1.193,
+          "turns": 18
+        },
+        {
+          "phase": "quiz lexicon after reload",
+          "seconds": 2.085,
+          "turns": 30
+        },
+        {
+          "phase": "teach music",
+          "seconds": 2.747,
+          "turns": 24
+        },
+        {
+          "phase": "quiz music",
+          "seconds": 0.724,
+          "turns": 12
+        },
+        {
+          "phase": "save, unload, reload (2)",
+          "seconds": 6.882
+        },
+        {
+          "phase": "quiz english final",
+          "seconds": 1.219,
+          "turns": 20
+        },
+        {
+          "phase": "quiz python final",
+          "seconds": 1.143,
+          "turns": 18
+        },
+        {
+          "phase": "quiz music final",
+          "seconds": 0.752,
+          "turns": 12
+        },
+        {
+          "phase": "quiz lexicon final",
+          "seconds": 2.059,
+          "turns": 30
+        }
+      ],
+      "accuracies": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0,
+        "english_after_reload": 1.0,
+        "python_after_reload": 1.0,
+        "lexicon_after_reload": 1.0,
+        "music": 1.0,
+        "english_final": 1.0,
+        "python_final": 1.0,
+        "music_final": 1.0,
+        "lexicon_final": 1.0
+      },
+      "before_reload": {
+        "english": 1.0,
+        "lexicon": 1.0,
+        "python": 1.0,
+        "english_after_python": 1.0
+      },
+      "strengths_before_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "strengths_after_reload": {
+        "hello is a greeting": 0.513602,
+        "python is a programming language": 0.671395,
+        "print means showing text on the screen": 0.673326
+      },
+      "permanent": true,
+      "neurons": 3891,
+      "synapses": 10359,
+      "known_facts": 92,
+      "turns": 80,
+      "transcript": [
+        {
+          "input": "[taught english: 68 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "[taught lexicon: 1000 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        },
+        {
+          "input": "what is the word overproof?",
+          "reply": "the word overproof is an english word."
+        },
+        {
+          "input": "what is the word phoridae?",
+          "reply": "the word phoridae is an english word."
+        },
+        {
+          "input": "what is the word presental?",
+          "reply": "the word presental is an english word."
+        },
+        {
+          "input": "what is the word rebreed?",
+          "reply": "the word rebreed is an english word."
+        },
+        {
+          "input": "what is the word rowdy?",
+          "reply": "the word rowdy is an english word."
+        },
+        {
+          "input": "what is the word seraphine?",
+          "reply": "the word seraphine is an english word."
+        },
+        {
+          "input": "what is the word sociality?",
+          "reply": "the word sociality is an english word."
+        },
+        {
+          "input": "what is the word subbase?",
+          "reply": "the word subbase is an english word."
+        },
+        {
+          "input": "what is the word tentmaker?",
+          "reply": "the word tentmaker is an english word."
+        },
+        {
+          "input": "what is the word trod?",
+          "reply": "the word trod is an english word."
+        },
+        {
+          "input": "what is the word unionoid?",
+          "reply": "the word unionoid is an english word."
+        },
+        {
+          "input": "what is the word vehemency?",
+          "reply": "the word vehemency is an english word."
+        },
+        {
+          "input": "[taught python: 59 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is python?",
+          "reply": "python is a programming language."
+        },
+        {
+          "input": "what does print mean?",
+          "reply": "print means showing text on the screen."
+        },
+        {
+          "input": "what is a variable?",
+          "reply": "a variable is a named value."
+        },
+        {
+          "input": "what is a string?",
+          "reply": "a string is text data."
+        },
+        {
+          "input": "what is a list?",
+          "reply": "a list is an ordered collection."
+        },
+        {
+          "input": "what is a dict?",
+          "reply": "a dict is a mapping of keys to values."
+        },
+        {
+          "input": "what does def mean?",
+          "reply": "def means defining a function."
+        },
+        {
+          "input": "what does return mean?",
+          "reply": "return means sending back a value."
+        },
+        {
+          "input": "what does the for loop mean?",
+          "reply": "the for loop means iterating over items."
+        },
+        {
+          "input": "what does indentation mean?",
+          "reply": "indentation means block structure."
+        },
+        {
+          "input": "what does import mean?",
+          "reply": "import means loading a module."
+        },
+        {
+          "input": "what is a class?",
+          "reply": "a class is a blueprint for objects."
+        },
+        {
+          "input": "what does self mean?",
+          "reply": "self means the current instance."
+        },
+        {
+          "input": "what does none mean?",
+          "reply": "none means no value."
+        },
+        {
+          "input": "what does debugging mean?",
+          "reply": "debugging means finding bugs."
+        },
+        {
+          "input": "what is syntax?",
+          "reply": "syntax is the spelling of code."
+        },
+        {
+          "input": "what does recursion mean?",
+          "reply": "recursion means a function calling itself."
+        },
+        {
+          "input": "what does an if statement mean?",
+          "reply": "an if statement means choosing a branch."
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "[unloaded and reloaded from disk]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is python?",
+          "reply": "python is a programming language."
+        },
+        {
+          "input": "what does print mean?",
+          "reply": "print means showing text on the screen."
+        },
+        {
+          "input": "what is a variable?",
+          "reply": "a variable is a named value."
+        },
+        {
+          "input": "what is a string?",
+          "reply": "a string is text data."
+        },
+        {
+          "input": "what is a list?",
+          "reply": "a list is an ordered collection."
+        },
+        {
+          "input": "what is a dict?",
+          "reply": "a dict is a mapping of keys to values."
+        },
+        {
+          "input": "what does def mean?",
+          "reply": "def means defining a function."
+        },
+        {
+          "input": "what does return mean?",
+          "reply": "return means sending back a value."
+        },
+        {
+          "input": "what does the for loop mean?",
+          "reply": "the for loop means iterating over items."
+        },
+        {
+          "input": "what does indentation mean?",
+          "reply": "indentation means block structure."
+        },
+        {
+          "input": "what does import mean?",
+          "reply": "import means loading a module."
+        },
+        {
+          "input": "what is a class?",
+          "reply": "a class is a blueprint for objects."
+        },
+        {
+          "input": "what does self mean?",
+          "reply": "self means the current instance."
+        },
+        {
+          "input": "what does none mean?",
+          "reply": "none means no value."
+        },
+        {
+          "input": "what does debugging mean?",
+          "reply": "debugging means finding bugs."
+        },
+        {
+          "input": "what is syntax?",
+          "reply": "syntax is the spelling of code."
+        },
+        {
+          "input": "what does recursion mean?",
+          "reply": "recursion means a function calling itself."
+        },
+        {
+          "input": "what does an if statement mean?",
+          "reply": "an if statement means choosing a branch."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        },
+        {
+          "input": "what is the word overproof?",
+          "reply": "the word overproof is an english word."
+        },
+        {
+          "input": "what is the word phoridae?",
+          "reply": "the word phoridae is an english word."
+        },
+        {
+          "input": "what is the word presental?",
+          "reply": "the word presental is an english word."
+        },
+        {
+          "input": "what is the word rebreed?",
+          "reply": "the word rebreed is an english word."
+        },
+        {
+          "input": "what is the word rowdy?",
+          "reply": "the word rowdy is an english word."
+        },
+        {
+          "input": "what is the word seraphine?",
+          "reply": "the word seraphine is an english word."
+        },
+        {
+          "input": "what is the word sociality?",
+          "reply": "the word sociality is an english word."
+        },
+        {
+          "input": "what is the word subbase?",
+          "reply": "the word subbase is an english word."
+        },
+        {
+          "input": "what is the word tentmaker?",
+          "reply": "the word tentmaker is an english word."
+        },
+        {
+          "input": "what is the word trod?",
+          "reply": "the word trod is an english word."
+        },
+        {
+          "input": "what is the word unionoid?",
+          "reply": "the word unionoid is an english word."
+        },
+        {
+          "input": "what is the word vehemency?",
+          "reply": "the word vehemency is an english word."
+        },
+        {
+          "input": "[taught music: 24 lessons]",
+          "reply": ""
+        },
+        {
+          "input": "what is a note?",
+          "reply": "a note is a single sound."
+        },
+        {
+          "input": "what is a chord?",
+          "reply": "a chord is notes played together."
+        },
+        {
+          "input": "what is a scale?",
+          "reply": "a scale is notes in order."
+        },
+        {
+          "input": "what does the piano have?",
+          "reply": "the piano has keys."
+        },
+        {
+          "input": "what does the guitar have?",
+          "reply": "the guitar has strings."
+        },
+        {
+          "input": "what does tempo mean?",
+          "reply": "tempo means the speed of music."
+        },
+        {
+          "input": "what does rhythm mean?",
+          "reply": "rhythm means the pattern of beats."
+        },
+        {
+          "input": "what does melody mean?",
+          "reply": "melody means a tune."
+        },
+        {
+          "input": "what does harmony mean?",
+          "reply": "harmony means notes sounding together."
+        },
+        {
+          "input": "what does pitch mean?",
+          "reply": "pitch means how high or low a sound is."
+        },
+        {
+          "input": "what does lyrics mean?",
+          "reply": "lyrics means the words of a song."
+        },
+        {
+          "input": "what does practice mean?",
+          "reply": "practice means repeating to improve."
+        },
+        {
+          "input": "[unloaded and reloaded from disk again]",
+          "reply": ""
+        },
+        {
+          "input": "what is hello?",
+          "reply": "hello is a greeting."
+        },
+        {
+          "input": "what is goodbye?",
+          "reply": "goodbye is a farewell."
+        },
+        {
+          "input": "what does please mean?",
+          "reply": "please means asking kindly."
+        },
+        {
+          "input": "what does thanks mean?",
+          "reply": "thanks means gratitude."
+        },
+        {
+          "input": "what does i mean?",
+          "reply": "i means the speaker."
+        },
+        {
+          "input": "what does we mean?",
+          "reply": "we means a group including the speaker."
+        },
+        {
+          "input": "what does who mean?",
+          "reply": "who means asking about a person."
+        },
+        {
+          "input": "what does where mean?",
+          "reply": "where means asking about a place."
+        },
+        {
+          "input": "what does read mean?",
+          "reply": "read means understanding written words."
+        },
+        {
+          "input": "what does teach mean?",
+          "reply": "teach means giving knowledge."
+        },
+        {
+          "input": "what is water?",
+          "reply": "water is a clear liquid."
+        },
+        {
+          "input": "what does a book have?",
+          "reply": "a book has pages."
+        },
+        {
+          "input": "what is a house?",
+          "reply": "a house is where people live."
+        },
+        {
+          "input": "what does big mean?",
+          "reply": "big means large."
+        },
+        {
+          "input": "what does happy mean?",
+          "reply": "happy means feeling joy."
+        },
+        {
+          "input": "what is a noun?",
+          "reply": "a noun is a word for a thing."
+        },
+        {
+          "input": "what is a verb?",
+          "reply": "a verb is a word for an action."
+        },
+        {
+          "input": "what is grammar?",
+          "reply": "grammar is the structure of language."
+        },
+        {
+          "input": "what does plural mean?",
+          "reply": "plural means more than one."
+        },
+        {
+          "input": "what does a question mean?",
+          "reply": "a question means asking for information."
+        },
+        {
+          "input": "what is python?",
+          "reply": "python is a programming language."
+        },
+        {
+          "input": "what does print mean?",
+          "reply": "print means showing text on the screen."
+        },
+        {
+          "input": "what is a variable?",
+          "reply": "a variable is a named value."
+        },
+        {
+          "input": "what is a string?",
+          "reply": "a string is text data."
+        },
+        {
+          "input": "what is a list?",
+          "reply": "a list is an ordered collection."
+        },
+        {
+          "input": "what is a dict?",
+          "reply": "a dict is a mapping of keys to values."
+        },
+        {
+          "input": "what does def mean?",
+          "reply": "def means defining a function."
+        },
+        {
+          "input": "what does return mean?",
+          "reply": "return means sending back a value."
+        },
+        {
+          "input": "what does the for loop mean?",
+          "reply": "the for loop means iterating over items."
+        },
+        {
+          "input": "what does indentation mean?",
+          "reply": "indentation means block structure."
+        },
+        {
+          "input": "what does import mean?",
+          "reply": "import means loading a module."
+        },
+        {
+          "input": "what is a class?",
+          "reply": "a class is a blueprint for objects."
+        },
+        {
+          "input": "what does self mean?",
+          "reply": "self means the current instance."
+        },
+        {
+          "input": "what does none mean?",
+          "reply": "none means no value."
+        },
+        {
+          "input": "what does debugging mean?",
+          "reply": "debugging means finding bugs."
+        },
+        {
+          "input": "what is syntax?",
+          "reply": "syntax is the spelling of code."
+        },
+        {
+          "input": "what does recursion mean?",
+          "reply": "recursion means a function calling itself."
+        },
+        {
+          "input": "what does an if statement mean?",
+          "reply": "an if statement means choosing a branch."
+        },
+        {
+          "input": "what is a note?",
+          "reply": "a note is a single sound."
+        },
+        {
+          "input": "what is a chord?",
+          "reply": "a chord is notes played together."
+        },
+        {
+          "input": "what is a scale?",
+          "reply": "a scale is notes in order."
+        },
+        {
+          "input": "what does the piano have?",
+          "reply": "the piano has keys."
+        },
+        {
+          "input": "what does the guitar have?",
+          "reply": "the guitar has strings."
+        },
+        {
+          "input": "what does tempo mean?",
+          "reply": "tempo means the speed of music."
+        },
+        {
+          "input": "what does rhythm mean?",
+          "reply": "rhythm means the pattern of beats."
+        },
+        {
+          "input": "what does melody mean?",
+          "reply": "melody means a tune."
+        },
+        {
+          "input": "what does harmony mean?",
+          "reply": "harmony means notes sounding together."
+        },
+        {
+          "input": "what does pitch mean?",
+          "reply": "pitch means how high or low a sound is."
+        },
+        {
+          "input": "what does lyrics mean?",
+          "reply": "lyrics means the words of a song."
+        },
+        {
+          "input": "what does practice mean?",
+          "reply": "practice means repeating to improve."
+        },
+        {
+          "input": "what is the word aal?",
+          "reply": "the word aal is an english word."
+        },
+        {
+          "input": "what is the word amorist?",
+          "reply": "the word amorist is an english word."
+        },
+        {
+          "input": "what is the word augustus?",
+          "reply": "the word augustus is an english word."
+        },
+        {
+          "input": "what is the word betrough?",
+          "reply": "the word betrough is an english word."
+        },
+        {
+          "input": "what is the word burley?",
+          "reply": "the word burley is an english word."
+        },
+        {
+          "input": "what is the word chinin?",
+          "reply": "the word chinin is an english word."
+        },
+        {
+          "input": "what is the word cothish?",
+          "reply": "the word cothish is an english word."
+        },
+        {
+          "input": "what is the word deperdite?",
+          "reply": "the word deperdite is an english word."
+        },
+        {
+          "input": "what is the word earth?",
+          "reply": "the word earth is an english word."
+        },
+        {
+          "input": "what is the word exsertion?",
+          "reply": "the word exsertion is an english word."
+        },
+        {
+          "input": "what is the word fretter?",
+          "reply": "the word fretter is an english word."
+        },
+        {
+          "input": "what is the word grecism?",
+          "reply": "the word grecism is an english word."
+        },
+        {
+          "input": "what is the word homophyly?",
+          "reply": "the word homophyly is an english word."
+        },
+        {
+          "input": "what is the word isomer?",
+          "reply": "the word isomer is an english word."
+        },
+        {
+          "input": "what is the word lanson?",
+          "reply": "the word lanson is an english word."
+        },
+        {
+          "input": "what is the word malleal?",
+          "reply": "the word malleal is an english word."
+        },
+        {
+          "input": "what is the word moneyed?",
+          "reply": "the word moneyed is an english word."
+        },
+        {
+          "input": "what is the word nonylic?",
+          "reply": "the word nonylic is an english word."
+        },
+        {
+          "input": "what is the word overproof?",
+          "reply": "the word overproof is an english word."
+        },
+        {
+          "input": "what is the word phoridae?",
+          "reply": "the word phoridae is an english word."
+        },
+        {
+          "input": "what is the word presental?",
+          "reply": "the word presental is an english word."
+        },
+        {
+          "input": "what is the word rebreed?",
+          "reply": "the word rebreed is an english word."
+        },
+        {
+          "input": "what is the word rowdy?",
+          "reply": "the word rowdy is an english word."
+        },
+        {
+          "input": "what is the word seraphine?",
+          "reply": "the word seraphine is an english word."
+        },
+        {
+          "input": "what is the word sociality?",
+          "reply": "the word sociality is an english word."
+        },
+        {
+          "input": "what is the word subbase?",
+          "reply": "the word subbase is an english word."
+        },
+        {
+          "input": "what is the word tentmaker?",
+          "reply": "the word tentmaker is an english word."
+        },
+        {
+          "input": "what is the word trod?",
+          "reply": "the word trod is an english word."
+        },
+        {
+          "input": "what is the word unionoid?",
+          "reply": "the word unionoid is an english word."
+        },
+        {
+          "input": "what is the word vehemency?",
+          "reply": "the word vehemency is an english word."
+        }
+      ]
+    }
+  ]
+}
