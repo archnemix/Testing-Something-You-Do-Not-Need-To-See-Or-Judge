@@ -39,6 +39,11 @@ class Ensemble:
     born: int
 
 
+def sequence_words(text: str) -> list[str]:
+    """The words of a sentence in order, punctuation stripped (speech)."""
+    return re.findall(r"[a-z0-9']+", text.casefold())
+
+
 def phrase_features(phrase: str) -> set[str]:
     """Perception: a phrase lights up spelling-feature neurons (case folded).
 
@@ -92,9 +97,13 @@ class PlasticNetwork:
         self._protected: set[int] = set()
         self._ensembles: dict[int, Ensemble] = {}
         self._ensemble_features: dict[int, set[str]] = {}
-        self._imprints: dict[tuple[str, int], float] = {}
+        self._feature_ensembles: dict[str, set[int]] = {}
+        self._imprints: dict[int, dict[str, float]] = {}
         self._synapses: dict[tuple[int, int, int], float] = {}
+        self._outgoing: dict[int, set[tuple[int, int]]] = {}
         self._peaks: dict[tuple[int, int, int], float] = {}
+        self._context_gates: dict[tuple[str, ...], int] = {}
+        self._next_context_gate = -1
 
     # -- telling -----------------------------------------------------------
 
@@ -122,10 +131,139 @@ class PlasticNetwork:
         for pre in subject_ens.neurons:
             for post in object_ens.neurons:
                 self._strengthen(pre, post, relation_ens.identifier)
-        self._strengthen_imprints(subject)
-        self._strengthen_imprints(relation)
-        self._strengthen_imprints(object_phrase)
+        self._strengthen_imprints(subject, subject_ens)
+        self._strengthen_imprints(relation, relation_ens)
+        self._strengthen_imprints(object_phrase, object_ens)
         return strength < KNOWN_BELOW
+
+    def observe_sequence(self, text: str) -> list[str]:
+        """Teach the word order of a sentence: w1 then w2 then w3 ...
+
+        Word order lives in the same synapses as everything else. Each step
+        is wired under three gates: the plain 'comes after' relation (any
+        context), the previous word pair, and the previous word triple --
+        so the same word can follow different words differently, exactly
+        like spoken language, while unused order still decays.
+        """
+        words = sequence_words(text)
+        self.clock += 1
+        ensembles: list[Ensemble] = []
+        for word in words:
+            ensemble = self._recognize(word, recruit=True)
+            assert ensemble
+            self._strengthen_imprints(word, ensemble)
+            ensembles.append(ensemble)
+        relation_ens = self._recognize("comes after", recruit=True)
+        assert relation_ens
+        self._strengthen_imprints("comes after", relation_ens)
+        for index, (first, second) in enumerate(zip(ensembles, ensembles[1:])):
+            self._strengthen(first.neurons[0], second.neurons[0], relation_ens.identifier)
+            if index >= 1:
+                gate = self._context_gate((words[index - 1], words[index]))
+                self._strengthen(first.neurons[0], second.neurons[0], gate)
+            if index >= 2:
+                gate = self._context_gate(
+                    (words[index - 2], words[index - 1], words[index])
+                )
+                self._strengthen(first.neurons[0], second.neurons[0], gate)
+        return words
+
+    def _context_gate(self, words: tuple[str, ...]) -> int:
+        """A gate code for one word context (negative: never an ensemble id)."""
+        code = self._context_gates.get(words)
+        if code is None:
+            code = self._next_context_gate
+            self._next_context_gate -= 1
+            self._context_gates[words] = code
+        return code
+
+    def observe_corpus(self, sentences: list[str]) -> int:
+        """Teach many sentences at once (words first, then the order links)."""
+        self.clock += 1
+        parsed = [sequence_words(text) for text in sentences]
+        self._recognize("comes after", recruit=True)
+        known: dict[str, Ensemble] = {}
+        for words in parsed:
+            for word in words:
+                if word not in known:
+                    ensemble = self._recognize(word, recruit=True)
+                    assert ensemble
+                    known[word] = ensemble
+        relation_ens = self._recognize("comes after", recruit=False)
+        assert relation_ens
+        wired = 0
+        for words in parsed:
+            for index, (first, second) in enumerate(zip(words, words[1:])):
+                first_ens = known.get(first)
+                second_ens = known.get(second)
+                if first_ens is None or second_ens is None:
+                    continue
+                if first_ens.identifier not in self._ensembles:
+                    continue  # forgotten under capacity pressure
+                if second_ens.identifier not in self._ensembles:
+                    continue
+                self._strengthen(
+                    first_ens.neurons[0], second_ens.neurons[0], relation_ens.identifier
+                )
+                if index >= 1:
+                    gate = self._context_gate((words[index - 1], words[index]))
+                    self._strengthen(first_ens.neurons[0], second_ens.neurons[0], gate)
+                if index >= 2:
+                    gate = self._context_gate(
+                        (words[index - 2], words[index - 1], words[index])
+                    )
+                    self._strengthen(first_ens.neurons[0], second_ens.neurons[0], gate)
+                wired += 1
+        return wired
+
+    def successors(self, phrase: str, context: tuple[str, ...] = ()) -> list[tuple[str, float]]:
+        """Which learned words can follow this one, and how strongly.
+
+        With a context of earlier words the answer uses the richest learned
+        gate first (this word after those words), backing off to plain
+        word order when the context itself was never heard.
+        """
+        ensemble = self._recognize(phrase, recruit=False)
+        if ensemble is None:
+            return []
+        relation_ens = self._recognize("comes after", recruit=False)
+        if relation_ens is None:
+            return []
+        gates = []
+        if len(context) >= 2:
+            gates.append(self._context_gates.get((context[-2], context[-1], phrase)))
+        if context:
+            gates.append(self._context_gates.get((context[-1], phrase)))
+        gates.append(relation_ens.identifier)
+        owner = {
+            neuron: ens.identifier
+            for ens in self._ensembles.values()
+            for neuron in ens.neurons
+        }
+        for gate in gates:
+            if gate is None:
+                continue
+            scored: dict[int, float] = {}
+            for pre in ensemble.neurons:
+                for post, post_gate in self._outgoing.get(pre, ()):
+                    if post_gate != gate:
+                        continue
+                    identifier = owner.get(post)
+                    if identifier is None or identifier == ensemble.identifier:
+                        continue
+                    weight = self._synapses.get((pre, post, post_gate), 0.0)
+                    if weight > scored.get(identifier, 0.0):
+                        scored[identifier] = weight
+            if scored:
+                return sorted(
+                    (
+                        (self._ensembles[identifier].label, weight)
+                        for identifier, weight in scored.items()
+                        if weight >= self.prune_below
+                    ),
+                    key=lambda item: -item[1],
+                )
+        return []
 
     # -- answering ---------------------------------------------------------
 
@@ -178,12 +316,17 @@ class PlasticNetwork:
             for key, weight in self._synapses.items()
             if self._decayed(weight, times) >= self.prune_below
         }
+        imprint_floor = (1.0 - self.decay_rate * 0.1) ** times
         self._imprints = {
-            key: weight * (1.0 - self.decay_rate * 0.1) ** times
-            for key, weight in self._imprints.items()
-            if weight * (1.0 - self.decay_rate * 0.1) ** times >= self.prune_below
+            neuron: {
+                feature: weight * imprint_floor
+                for feature, weight in weights.items()
+                if weight * imprint_floor >= self.prune_below
+            }
+            for neuron, weights in self._imprints.items()
         }
         self._prune_dead_neurons()
+        self._reindex()
 
     def _decayed(self, weight: float, times: int) -> float:
         rate = self.decay_rate * (1.0 - CONSOLIDATION * weight)
@@ -204,8 +347,9 @@ class PlasticNetwork:
         for pre, post, _ in self._synapses:
             connected.add(pre)
             connected.add(post)
-        for _, neuron in self._imprints:
-            connected.add(neuron)
+        for neuron, weights in self._imprints.items():
+            if weights:
+                connected.add(neuron)
         live = {
             identifier: Ensemble(
                 ensemble.identifier,
@@ -277,7 +421,8 @@ class PlasticNetwork:
             ],
             "imprints": [
                 {"feature": f, "neuron": n, "weight": round(w, 6)}
-                for (f, n), w in sorted(self._imprints.items())
+                for n, weights in sorted(self._imprints.items())
+                for f, w in sorted(weights.items())
             ],
             "synapses": [
                 {"pre": a, "post": b, "gate": g, "weight": round(w, 6)}
@@ -286,6 +431,10 @@ class PlasticNetwork:
             "peaks": [
                 {"pre": a, "post": b, "gate": g, "peak": round(p, 6)}
                 for (a, b, g), p in sorted(self._peaks.items())
+            ],
+            "context_gates": [
+                {"words": list(words), "code": code}
+                for words, code in sorted(self._context_gates.items())
             ],
         }
 
@@ -302,10 +451,12 @@ class PlasticNetwork:
             )
             for item in payload.get("ensembles", [])  # type: ignore[union-attr]
         }
-        self._imprints = {
-            (str(item["feature"]), int(item["neuron"])): float(item["weight"])
-            for item in payload.get("imprints", [])  # type: ignore[union-attr]
-        }
+        self._imprints = {}
+        for item in payload.get("imprints", []):  # type: ignore[union-attr]
+            neuron = int(item["neuron"])
+            self._imprints.setdefault(neuron, {})[str(item["feature"])] = float(
+                item["weight"]
+            )
         self._synapses = {
             (int(item["pre"]), int(item["post"]), int(item["gate"])): float(
                 item["weight"]
@@ -319,13 +470,23 @@ class PlasticNetwork:
             for item in payload.get("peaks", [])  # type: ignore[union-attr]
         }
         self._ensemble_features = {}
-        for feature, neuron in self._imprints:
-            for identifier, ensemble in self._ensembles.items():
-                if neuron in ensemble.neurons:
-                    self._ensemble_features.setdefault(identifier, set()).add(feature)
+        for identifier, ensemble in self._ensembles.items():
+            features: set[str] = set()
+            for neuron in ensemble.neurons:
+                features.update(self._imprints.get(neuron, {}))
+            self._ensemble_features[identifier] = features
         self._next_ensemble_id = max(
             self._next_ensemble_id, max(self._ensembles, default=-1) + 1
         )
+        self._context_gates = {}
+        codes = [0]
+        for item in payload.get("context_gates", []):  # type: ignore[union-attr]
+            words = tuple(str(word) for word in item["words"])
+            code = int(item["code"])
+            self._context_gates[words] = code
+            codes.append(code)
+        self._next_context_gate = min(codes) - 1
+        self._reindex()
 
     # -- internals ---------------------------------------------------------
 
@@ -333,10 +494,25 @@ class PlasticNetwork:
         features = phrase_features(phrase)
         if not features:
             return None
-        scored: list[tuple[float, Ensemble]] = []
         cue_prefixes = {f for f in features if f.startswith("pre:")}
-        for ensemble in self._ensembles.values():
-            stored = self._ensemble_features.get(ensemble.identifier, set())
+        # candidates must share enough word-beginnings with the cue; for
+        # short phrases that means all of them, so intersect the prefix sets
+        prefix_sets = [self._feature_ensembles.get(f, set()) for f in cue_prefixes]
+        needed = PREFIX_COVER * len(cue_prefixes)
+        if needed > len(cue_prefixes) - 1 and prefix_sets:
+            candidate_ids: set[int] = set(prefix_sets[0])
+            for holders in prefix_sets[1:]:
+                candidate_ids &= holders
+        else:
+            candidate_ids = set()
+            for holders in prefix_sets:
+                candidate_ids |= holders
+        scored: list[tuple[float, Ensemble]] = []
+        for identifier in candidate_ids:
+            ensemble = self._ensembles.get(identifier)
+            if ensemble is None:
+                continue
+            stored = self._ensemble_features.get(identifier, set())
             shared = features & stored
             if not shared:
                 continue
@@ -345,10 +521,8 @@ class PlasticNetwork:
             shared_prefixes = {f for f in shared if f.startswith("pre:")}
             if len(shared_prefixes) < PREFIX_COVER * len(cue_prefixes):
                 continue
-            weight = sum(
-                self._imprints.get((feature, ensemble.neurons[0]), 0.0)
-                for feature in shared
-            )
+            first_weights = self._imprints.get(ensemble.neurons[0], {})
+            weight = sum(first_weights.get(feature, 0.0) for feature in shared)
             scored.append((weight / len(features | stored), ensemble))
         scored.sort(key=lambda item: item[0], reverse=True)
         threshold = RECRUIT_AT if recruit else CUE_AT
@@ -371,8 +545,9 @@ class PlasticNetwork:
         self._ensembles[ensemble.identifier] = ensemble
         self._ensemble_features[ensemble.identifier] = set(features)
         for feature in features:
-            for neuron in neurons:
-                self._imprints[(feature, neuron)] = 1.0
+            self._feature_ensembles.setdefault(feature, set()).add(ensemble.identifier)
+        for neuron in neurons:
+            self._imprints[neuron] = {feature: 1.0 for feature in features}
         return ensemble
 
     def _evict_weakest(self) -> bool:
@@ -385,46 +560,66 @@ class PlasticNetwork:
         if not candidates:
             return False
 
-        def aggregate(ensemble: Ensemble) -> float:
-            """Importance = strength of what it knows (its connections).
+        # importance = strength of what it knows (its connections), summed
+        # in one pass; perception is excluded so short names are not weaker
+        totals: dict[int, float] = {e.identifier: 0.0 for e in candidates}
+        owner = {
+            neuron: ensemble.identifier
+            for ensemble in self._ensembles.values()
+            for neuron in ensemble.neurons
+        }
+        for (pre, post, gate), weight in self._synapses.items():
+            touching = {owner.get(pre), owner.get(post)} - {None}
+            for identifier in touching:
+                if identifier in totals:
+                    totals[identifier] += weight
+            if gate in totals:
+                totals[gate] += weight
 
-            Imprints (perception) are deliberately excluded: a concept is
-            not weaker because its name is short.
-            """
-            own = set(ensemble.neurons)
-            synapse_total = sum(
-                weight
-                for (pre, post, _), weight in self._synapses.items()
-                if pre in own or post in own
-            )
-            gated_total = sum(
-                weight
-                for (_, _, gate), weight in self._synapses.items()
-                if gate == ensemble.identifier
-            )
-            return synapse_total + gated_total
-
-        victim = min(candidates, key=lambda e: (aggregate(e), -e.born))
+        victim = min(
+            candidates, key=lambda e: (totals[e.identifier], -e.born)
+        )
         victim_neurons = set(victim.neurons)
         del self._ensembles[victim.identifier]
-        self._ensemble_features.pop(victim.identifier, None)
-        self._imprints = {
-            key: weight
-            for key, weight in self._imprints.items()
-            if key[1] not in victim_neurons
+        features = self._ensemble_features.pop(victim.identifier, set())
+        for feature in features:
+            holders = self._feature_ensembles.get(feature)
+            if holders is not None:
+                holders.discard(victim.identifier)
+                if not holders:
+                    self._feature_ensembles.pop(feature, None)
+        for neuron in victim_neurons:
+            self._imprints.pop(neuron, None)
+        dropped = {
+            key
+            for key in self._synapses
+            if key[0] in victim_neurons or key[1] in victim_neurons
         }
-        self._synapses = {
-            key: weight
-            for key, weight in self._synapses.items()
-            if key[0] not in victim_neurons and key[1] not in victim_neurons
-        }
-        self._peaks = {
-            key: value
-            for key, value in self._peaks.items()
-            if key in self._synapses
-        }
-        self._prune_dead_neurons()
+        self._drop_synapses(dropped)
         return True
+
+    def _drop_synapses(self, keys) -> None:
+        for key in keys:
+            self._synapses.pop(key, None)
+            self._peaks.pop(key, None)
+            pre, post, gate = key
+            out = self._outgoing.get(pre)
+            if out is not None:
+                out.discard((post, gate))
+                if not out:
+                    self._outgoing.pop(pre, None)
+
+    def _reindex(self) -> None:
+        """Rebuild the lookup indexes from the synapses and ensembles."""
+        self._outgoing = {}
+        for pre, post, gate in self._synapses:
+            self._outgoing.setdefault(pre, set()).add((post, gate))
+        self._feature_ensembles = {}
+        for identifier, features in self._ensemble_features.items():
+            if identifier not in self._ensembles:
+                continue
+            for feature in features:
+                self._feature_ensembles.setdefault(feature, set()).add(identifier)
 
     def _strengthen(self, pre: int, post: int, gate: int) -> None:
         key = (pre, post, gate)
@@ -433,18 +628,21 @@ class PlasticNetwork:
         rate = min(0.95, self.learning_rate * (1.0 + SAVINGS * peak))
         self._synapses[key] = weight + rate * (1.0 - weight)
         self._peaks[key] = max(peak, self._synapses[key])
+        self._outgoing.setdefault(pre, set()).add((post, gate))
 
-    def _strengthen_imprints(self, phrase: str) -> None:
+    def _strengthen_imprints(self, phrase: str, ensemble: Ensemble) -> None:
+        """Repetition re-strengthens the perception of this memory itself."""
         features = phrase_features(phrase)
-        for feature in features:
-            for ensemble in self._ensembles.values():
-                for neuron in ensemble.neurons:
-                    key = (feature, neuron)
-                    weight = self._imprints.get(key, 0.0)
-                    if weight > 0.0:
-                        self._imprints[key] = weight + (
-                            self.learning_rate * IMPRINT_BOOST * (1.0 - weight)
-                        )
+        for neuron in ensemble.neurons:
+            weights = self._imprints.get(neuron)
+            if not weights:
+                continue
+            for feature in features:
+                weight = weights.get(feature)
+                if weight is not None:
+                    weights[feature] = weight + (
+                        self.learning_rate * IMPRINT_BOOST * (1.0 - weight)
+                    )
 
     def _path_strength(
         self, subject_ens: Ensemble, object_ens: Ensemble, relation_ens: Ensemble
@@ -459,11 +657,14 @@ class PlasticNetwork:
 
     def _spread(self, activation: dict[int, float], gate: int) -> dict[int, float]:
         firing = dict(activation)
-        for (pre, post, synapse_gate), weight in self._synapses.items():
-            if synapse_gate != gate or weight < self.prune_below:
-                continue
-            if pre in activation:
-                firing[post] = firing.get(post, 0.0) + weight * activation[pre]
+        for pre, value in activation.items():
+            for post, synapse_gate in self._outgoing.get(pre, ()):
+                if synapse_gate != gate:
+                    continue
+                weight = self._synapses.get((pre, post, synapse_gate), 0.0)
+                if weight < self.prune_below:
+                    continue
+                firing[post] = firing.get(post, 0.0) + weight * value
         return firing
 
     def _winners(
@@ -496,3 +697,4 @@ class PlasticNetwork:
                     self._peaks[key] = max(
                         self._peaks.get(key, 0.0), self._synapses[key]
                     )
+                    self._outgoing.setdefault(pre, set()).add((post, gate))
