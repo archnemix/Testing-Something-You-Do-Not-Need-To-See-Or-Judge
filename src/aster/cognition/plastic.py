@@ -176,7 +176,12 @@ class PlasticNetwork:
                     self._strengthen(first.neurons[0], second.neurons[0], gate)
         return words
 
-    def stream_learn(self, text: str, words: list[str] | None = None) -> list[float]:
+    def stream_learn(
+        self,
+        text: str,
+        words: list[str] | None = None,
+        known: dict[str, "Ensemble"] | None = None,
+    ) -> list[float]:
         """Learn the way a brain learns: predict, then be surprised.
 
         Before each word, the network predicts it from what came before.
@@ -185,14 +190,16 @@ class PlasticNetwork:
         barely moves (habituation), and a confidently wrong guess is nudged
         down (prediction error). Returns the surprise felt at each step --
         the same signal an EEG reads as an event-related response. Pass
-        `words` to stream pre-tokenized units (e.g. code tokens).
+        `words` to stream pre-tokenized units (e.g. code tokens); pass a
+        shared `known` dict to keep word memories warm across many lines.
         """
         words = (list(words) if words is not None else sequence_words(text)) + ["."]
         relation_ens = self._recognize("comes after", recruit=True)
         assert relation_ens
         surprises: list[float] = []
         ensembles: list[Ensemble] = []
-        known: dict[str, Ensemble] = {}
+        if known is None:
+            known = {}
         for index, word in enumerate(words):
             ensemble = known.get(word)
             if ensemble is None or ensemble.identifier not in self._ensembles:
@@ -241,7 +248,9 @@ class PlasticNetwork:
                 self._apply(key, new_weight, new_weight - weight)
             # prediction error: the confident wrong guess is pushed down
             if wrong_label is not None and surprise > 0.2:
-                wrong_ens = self._recognize(wrong_label, recruit=False)
+                wrong_ens = known.get(wrong_label) or self._recognize(
+                    wrong_label, recruit=False
+                )
                 if wrong_ens is not None:
                     weaken_keys = [
                         (previous.neurons[0], wrong_ens.neurons[0], synapse_gate)
@@ -262,6 +271,15 @@ class PlasticNetwork:
                 self._drop_synapses([key])
             else:
                 self._apply(key, new_weight, new_weight - weight)
+
+    def stream_learn_lines(self, lines: list[str]) -> list[float]:
+        """Predictive training over a whole stream: one warm word memory,
+        so common words are recognized once, not once per sentence."""
+        known: dict[str, Ensemble] = {}
+        surprises: list[float] = []
+        for line in lines:
+            surprises.extend(self.stream_learn(line, known=known))
+        return surprises
 
     def observe_sequence(
         self, text: str, words: list[str] | None = None

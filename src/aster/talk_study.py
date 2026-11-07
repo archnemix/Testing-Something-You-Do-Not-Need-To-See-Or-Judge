@@ -93,12 +93,28 @@ def ensure_corpus() -> tuple[list[tuple[str, str]], list[str]]:
 
 def teach_all(net: PlasticNetwork, glosses, sentences) -> dict:
     t0 = time.perf_counter()
-    for word, gloss in glosses:
+    total_defs = len(glosses)
+    for index, (word, gloss) in enumerate(glosses):
         net.observe(word, "means", gloss)
+        if (index + 1) % 5000 == 0:
+            print(
+                f"[teach] definitions {index + 1:,}/{total_defs:,}"
+                f" ({100 * (index + 1) / total_defs:.1f}%)"
+                f" | neurons {net.neuron_count:,} | RSS {rss_mb()}MB",
+                flush=True,
+            )
     t1 = time.perf_counter()
     net.observe_corpus([f"{w} means {g}" for w, g in glosses])
     t2 = time.perf_counter()
-    net.observe_corpus(sentences)  # variable-length sentences, one stream
+    for start in range(0, len(sentences), 5000):
+        net.observe_corpus(sentences[start : start + 5000])
+        done = min(start + 5000, len(sentences))
+        print(
+            f"[teach] sentences {done:,}/{len(sentences):,}"
+            f" ({100 * done / len(sentences):.1f}%)"
+            f" | neurons {net.neuron_count:,} | RSS {rss_mb()}MB",
+            flush=True,
+        )
     t3 = time.perf_counter()
     net.tick(300)
     return {

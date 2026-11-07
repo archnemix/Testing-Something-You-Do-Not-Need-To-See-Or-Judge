@@ -35,11 +35,29 @@ SENTENCES = int(os.environ.get("BRAIN_SENTENCES", "60000"))
 
 
 def stream_corpus(net: PlasticNetwork, lines: list[str]) -> dict:
-    """Train by prediction over a stream of variable-length lines."""
+    """Train by prediction over a stream of variable-length lines.
+
+    Prints real progress (percent, speed, ETA, neurons, memory) so a CI
+    log shows exactly how much is done.
+    """
     t0 = time.perf_counter()
-    surprises = []
-    for line in lines:
-        surprises.extend(net.stream_learn(line))
+    surprises: list[float] = []
+    total = len(lines)
+    chunk = 1000
+    for start in range(0, total, chunk):
+        surprises.extend(net.stream_learn_lines(lines[start : start + chunk]))
+        done = min(start + chunk, total)
+        elapsed = time.perf_counter() - t0
+        rate = done / elapsed
+        eta = (total - done) / rate
+        mean_s = sum(surprises) / max(1, len(surprises))
+        print(
+            f"[train] {done:,}/{total:,} lines ({100 * done / total:.1f}%)"
+            f" | {rate:.0f} lines/s | surprise {mean_s:.3f}"
+            f" | neurons {net.neuron_count:,} | RSS {rss_mb()}MB"
+            f" | ETA {int(eta // 60)}m{int(eta % 60):02d}s",
+            flush=True,
+        )
     elapsed = time.perf_counter() - t0
     half = max(1, len(surprises) // 2)
     return {
