@@ -20,6 +20,7 @@ Run: python -m aster.coding
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 
@@ -106,8 +107,29 @@ class CodingStudent:
             self.teach(instruction, tokens)
 
     def teach(self, instruction: str, tokens: list[str]) -> None:
-        self.net.observe_corpus([instruction])
-        self.net.observe_sequence(instruction, words=tokens)
+        self.net.observe_corpus([instruction] * 3)
+        for _ in range(3):
+            self.net.observe_sequence(instruction, words=tokens)
+
+    def study(self, task: str) -> list[str]:
+        """Before acting, understand: look the task up (the local internet).
+
+        Understanding is stored the brain's way -- as MEANING pathways
+        (facts: what this is about), kept apart from the code SKILL
+        pathways (how to write it). Reading changes the brain, but it does
+        not scribble prose into the motor program.
+        """
+        findings = []
+        for word in task.split():
+            entry = self.lab.lookup(word)
+            if entry != "no reference found" and entry not in findings:
+                findings.append(entry)
+        words = task.replace("'", " ").replace('"', " ").split()
+        filler = {"print", "the", "text", "show", "number", "a", "an", "of"}
+        target = [w for w in words if w not in filler][-1]
+        for entry in findings:
+            self.net.observe(target, "means", entry)
+        return findings
 
     def attempt(self, tokens: list[str]) -> list[str]:
         """Form code from what it knows: walk the taught code pathways."""
@@ -115,21 +137,52 @@ class CodingStudent:
 
         return form_sentence(self.net, list(tokens), max_words=12)
 
-    def solve(self, task: str, expected: str, tries: int = 3) -> list[dict]:
-        """The second-learning loop: try, run, sense, look up, learn, retry."""
+    def save(self, path: str) -> None:
+        """Where the new information lives: the synapses themselves,
+        serialized whole -- the memory IS the network."""
+        from pathlib import Path
+
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps({"network": self.net.snapshot()}))
+
+    def load(self, path: str) -> None:
+        from pathlib import Path
+
+        self.net.restore(json.loads(Path(path).read_text())["network"])
+
+    def solve(self, task: str, expected: str, tries: int = 4) -> list[dict]:
+        """The human cycle: study, write, run, check, fix, rewrite, re-run."""
         words = task.replace("'", " ").replace('"', " ").split()
         filler = {"print", "the", "text", "show", "number", "a", "an", "of"}
         target = [w for w in words if w not in filler][-1]
-        transcript: list[dict] = []
+        transcript: list[dict] = [
+            {
+                "attempt": 0,
+                "stage": "study",
+                "code": "",
+                "output": "",
+                "error": "",
+                "understood": self.study(task),
+                "outcome": "prepared",
+            }
+        ]
+        shapes = (
+            lambda t: ["print", "(", "'" + t + "'", ")"],
+            lambda t: ["name", "=", "'" + t + "'", ";", "print", "(", "name", ")"],
+        )
         for attempt_no in range(tries):
+            rewritten = attempt_no >= 2
+            shape = shapes[1 if (rewritten and attempt_no % 2 == 0) else 0]
             if attempt_no == 0:
                 tokens = self.attempt(["print"])  # what it saw demonstrated
             else:
-                tokens = self.attempt(["print", "(", "'" + target + "'"])
+                tokens = self.attempt(shape(target))
             source = " ".join(tokens)
             result = self.lab.run(source)
             entry = {
                 "attempt": attempt_no + 1,
+                "stage": "rewrite" if rewritten else "code",
                 "code": source,
                 "output": result["output"],
                 "error": result["error"],
@@ -167,7 +220,12 @@ def main() -> None:
     for task, expected in CURRICULUM:
         print(f"\n== task: {task!r}  (want output: {expected!r})")
         for entry in student.solve(task, expected):
-            print(f"  attempt {entry['attempt']}: {entry['code']}")
+            if entry["stage"] == "study":
+                for thought in entry["understood"]:
+                    print(f"  studied: {thought}")
+                continue
+            label = "rewrite" if entry["stage"] == "rewrite" else f"attempt {entry['attempt']}"
+            print(f"  {label}: {entry['code']}")
             if entry.get("error"):
                 print(f"    -> ERROR {entry['error']}")
                 print(f"    -> looked up: {entry['lookup']}")
@@ -175,6 +233,8 @@ def main() -> None:
             else:
                 print(f"    -> output: {entry['output']!r}")
             print(f"    => {entry['outcome']}")
+    student.save("action-output/coding-student/network.json")
+    print("\nsaved the learned pathways -> action-output/coding-student/network.json")
 
 
 if __name__ == "__main__":

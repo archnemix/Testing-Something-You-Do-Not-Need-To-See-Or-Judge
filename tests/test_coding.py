@@ -19,7 +19,8 @@ class SecondLearningTests(unittest.TestCase):
     def test_it_learns_from_running_code_not_from_being_told(self) -> None:
         student = CodingStudent()
         transcript = student.solve("print the text welcome", "welcome")
-        self.assertEqual(transcript[0]["outcome"], "wrong output")  # it tried what it knew
+        first_try = transcript[1]  # after the study entry
+        self.assertEqual(first_try["outcome"], "wrong output")  # it tried what it knew
         self.assertEqual(transcript[-1]["outcome"], "solved")  # the loop got it there
         self.assertTrue(any(entry.get("lookup") for entry in transcript))
 
@@ -42,6 +43,35 @@ class SecondLearningTests(unittest.TestCase):
         student.solve("print the text sunshine", "sunshine")
         after = student.net.successors("print")[0][1]
         self.assertGreaterEqual(after, before)  # use strengthens, never destroys
+
+    def test_it_studies_before_writing_code(self) -> None:
+        student = CodingStudent()
+        transcript = student.solve("print the text welcome", "welcome")
+        self.assertEqual(transcript[0]["stage"], "study")
+        self.assertTrue(transcript[0]["understood"])  # looked it up first
+
+    def test_it_rewrites_with_another_code_when_stuck(self) -> None:
+        student = CodingStudent()
+        # expected output the first shape cannot produce: must rewrite
+        transcript = student.solve("print the text welcome", "WELCOME")
+        self.assertTrue(
+            any(entry["stage"] == "rewrite" for entry in transcript)
+        )
+
+    def test_new_information_lives_in_the_synapses_and_survives_reload(self) -> None:
+        import json
+        import tempfile
+        from pathlib import Path
+
+        student = CodingStudent()
+        student.solve("print the text welcome", "welcome")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = str(Path(tmp) / "student.json")
+            student.save(path)
+            revived = CodingStudent()
+            revived.load(path)
+        labels = [label for label, _ in revived.net.successors("welcome")]
+        self.assertIn("'welcome'", labels)  # the learning survived a restart
 
 
 if __name__ == "__main__":
