@@ -8,3 +8,4 @@ exec python -m aster.talk_study "$@"
 # (touch: retrigger talk-study on the fixed learning loop)
 # (touch: run the brain configuration at 300k)
 # (touch: rerun 300k with progress stats and the warm-word speedup)
+# (touch: per-item live progress in training logs)
