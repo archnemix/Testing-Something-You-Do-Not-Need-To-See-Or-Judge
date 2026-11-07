@@ -79,10 +79,11 @@ class SpeechTests(unittest.TestCase):
         net = PlasticNetwork()
         net.observe_sequence("quiet rivers flow slowly")
         before = net.successors("quiet")[0][1]
+        neurons_before = net.neuron_count
         form_sentence(net, ["quiet"], practice=True)  # it says the sentence
         after = net.successors("quiet")[0][1]
         self.assertGreater(after, before)  # saying it nudged the pathway up
-        self.assertEqual(net.neuron_count, 15)  # speaking added nothing
+        self.assertEqual(net.neuron_count, neurons_before)  # speaking added nothing
 
     def test_asking_nudges_what_it_recalls(self) -> None:
         speaker = Speaker(warm=True)

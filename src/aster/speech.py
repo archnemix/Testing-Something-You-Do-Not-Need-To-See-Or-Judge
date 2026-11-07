@@ -56,11 +56,13 @@ def form_sentence(
         ]
         picked = None
         for label in following:
+            if label == "." and len(words) == len(seed_words):
+                continue  # do not end before the sentence has started
             if label != words[-1] and (len(words) < 2 or label != words[-2]):
                 picked = label
                 break
-        if picked is None:
-            break
+        if picked is None or picked == ".":
+            break  # the sentence knows where it ends
         words.append(picked)
     if practice:
         net.practice_sentence(" ".join(words))
@@ -148,6 +150,9 @@ class Speaker:
         best: list[str] = []
         for word in content:
             formed = form_sentence(self.net, [word], practice=True)
+            if len(formed) <= 2 and self.net.retrieve(word, "means"):
+                # it knows what this word means: say that
+                formed = form_sentence(self.net, [word, "means"], practice=True)
             if len(formed) > len(best):
                 best = formed
             if len(best) >= 6:

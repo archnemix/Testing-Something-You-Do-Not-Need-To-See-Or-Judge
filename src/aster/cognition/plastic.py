@@ -175,9 +175,11 @@ class PlasticNetwork:
         is wired under three gates: the plain 'comes after' relation (any
         context), the previous word pair, and the previous word triple --
         so the same word can follow different words differently, exactly
-        like spoken language, while unused order still decays.
+        like spoken language, while unused order still decays. Every
+        sentence also learns where it ENDS (a final '.' word), so speech
+        stops at the sentence boundary instead of running on.
         """
-        words = sequence_words(text)
+        words = sequence_words(text) + ["."]
         self.clock += 1
         ensembles: list[Ensemble] = []
         for word in words:
@@ -212,7 +214,7 @@ class PlasticNetwork:
     def observe_corpus(self, sentences: list[str]) -> int:
         """Teach many sentences at once (words first, then the order links)."""
         self.clock += 1
-        parsed = [sequence_words(text) for text in sentences]
+        parsed = [sequence_words(text) + ["."] for text in sentences]
         self._recognize("comes after", recruit=True)
         known: dict[str, Ensemble] = {}
         for words in parsed:
