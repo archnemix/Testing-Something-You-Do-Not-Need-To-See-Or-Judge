@@ -31,8 +31,18 @@ STOPWORDS = {
 }
 
 
-def form_sentence(net: PlasticNetwork, seed_words: list[str], max_words: int = 18) -> list[str]:
-    """Grow a sentence from seed words by walking the learned word order."""
+def form_sentence(
+    net: PlasticNetwork,
+    seed_words: list[str],
+    max_words: int = 18,
+    practice: bool = False,
+) -> list[str]:
+    """Grow a sentence from seed words by walking the learned word order.
+
+    With ``practice=True`` the sentence that is spoken strengthens its own
+    pathways as it goes -- saying something is using it, and use nudges the
+    weights. Nothing new is stored by speaking; the paths that fired grow.
+    """
     words = list(seed_words)
     if not words:
         return []
@@ -52,6 +62,8 @@ def form_sentence(net: PlasticNetwork, seed_words: list[str], max_words: int = 1
         if picked is None:
             break
         words.append(picked)
+    if practice:
+        net.practice_sentence(" ".join(words))
     return words
 
 
@@ -72,7 +84,13 @@ class Speaker:
 
     def warmup(self) -> None:
         """Teach the conversation basics: curricula sentences and replies."""
-        seeds = [ACK_NEW, ACK_OLD, UNKNOWN]
+        seeds = [
+            ACK_NEW,
+            ACK_OLD,
+            UNKNOWN,
+            "i know words and what they mean",
+            "i am a network of neurons that learns from talking",
+        ]
         for skill in (ENGLISH, PYTHON, MUSIC):
             for lesson in skill.lessons:
                 seeds.append(lesson.text)
@@ -91,29 +109,45 @@ class Speaker:
             is_new = self.net.observe(fact.subject, fact.relation, fact.object)
             self.net.observe_sequence(text)
             start = sequence_words(ACK_NEW if is_new else ACK_OLD)[:1]
-            return render(form_sentence(self.net, start, max_words=5))
+            return render(form_sentence(self.net, start, max_words=5, practice=True))
         if parsed.kind is InputKind.QUESTION and parsed.subject and parsed.relation:
+            # asking nudges what is recalled (use-dependent consolidation)
             answers = self.net.retrieve(parsed.subject, parsed.relation)
-            if answers:
-                return render(self._answer_sentence(parsed.subject, answers[0][0]))
+            formulated = self._formulate(parsed.subject, parsed.relation, answers)
+            if formulated:
+                return render(formulated)
             return render(form_sentence(self.net, sequence_words(UNKNOWN)[:1], max_words=5))
         return render(self._talk(text))
 
-    def _answer_sentence(self, subject: str, answer: str) -> list[str]:
-        subject_words = sequence_words(subject)
-        answer_words = sequence_words(answer)
-        formed = form_sentence(self.net, subject_words)
-        if set(answer_words) & set(formed):
+    def _formulate(self, subject, relation, answers) -> list[str]:
+        """Answer the question asked: start from ITS words, complete with knowledge.
+
+        'what is python' and 'what does python mean' seed different paths,
+        so they get different sentences -- no replaying one stored answer.
+        """
+        seed = sequence_words(subject) + [relation]
+        formed = form_sentence(self.net, seed, practice=True)
+        if len(formed) > len(seed):
             return formed
-        from_answer = form_sentence(self.net, answer_words)
-        return from_answer if len(from_answer) > len(formed) else formed
+        for label, _ in answers:  # subject path is silent; speak the recalled words
+            from_answer = form_sentence(self.net, sequence_words(label), practice=True)
+            if len(from_answer) > 1:
+                return from_answer
+        return []
 
     def _talk(self, text: str) -> list[str]:
         words = sequence_words(text)
         content = [word for word in words if word not in STOPWORDS] or words
+
+        def known(word: str) -> tuple[int, float]:
+            following = self.net.successors(word)
+            weight = following[0][1] if following else 0.0
+            return (1 if following else 0), weight
+
+        content.sort(key=known, reverse=True)  # talk about what it knows
         best: list[str] = []
         for word in content:
-            formed = form_sentence(self.net, [word])
+            formed = form_sentence(self.net, [word], practice=True)
             if len(formed) > len(best):
                 best = formed
             if len(best) >= 6:

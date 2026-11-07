@@ -139,6 +139,35 @@ class PlasticNetwork:
         self._strengthen_imprints(object_phrase, object_ens)
         return strength < KNOWN_BELOW
 
+    def practice_sentence(self, text: str) -> list[str]:
+        """Use-dependent plasticity: saying a sentence strengthens its pathways.
+
+        Nothing new is added -- no new neurons, no new memories, no new
+        gates. Speaking is practice: the links that just fired get nudged
+        up, the loop that makes a skill better the more it is used. (Idle
+        pathways still decay in `tick` -- use it or lose it.)
+        """
+        words = sequence_words(text)
+        ensembles = [self._recognize(word, recruit=False) for word in words]
+        relation_ens = self._recognize("comes after", recruit=False)
+        if relation_ens is None:
+            return words
+        for index, (first, second) in enumerate(zip(ensembles, ensembles[1:])):
+            if first is None or second is None:
+                continue
+            self._strengthen(first.neurons[0], second.neurons[0], relation_ens.identifier)
+            if index >= 1:
+                gate = self._context_gates.get((words[index - 1], words[index]))
+                if gate is not None:
+                    self._strengthen(first.neurons[0], second.neurons[0], gate)
+            if index >= 2:
+                gate = self._context_gates.get(
+                    (words[index - 2], words[index - 1], words[index])
+                )
+                if gate is not None:
+                    self._strengthen(first.neurons[0], second.neurons[0], gate)
+        return words
+
     def observe_sequence(self, text: str) -> list[str]:
         """Teach the word order of a sentence: w1 then w2 then w3 ...
 
@@ -548,7 +577,10 @@ class PlasticNetwork:
         self._ensembles[ensemble.identifier] = ensemble
         self._ensemble_features[ensemble.identifier] = set(features)
         for feature in features:
-            self._feature_ensembles.setdefault(feature, set()).add(ensemble.identifier)
+            if feature.startswith("pre:"):  # candidates match by word beginnings
+                self._feature_ensembles.setdefault(feature, set()).add(
+                    ensemble.identifier
+                )
         for neuron in neurons:
             self._imprints[neuron] = {feature: 1.0 for feature in features}
             self._neuron_owner[neuron] = ensemble.identifier
@@ -646,7 +678,8 @@ class PlasticNetwork:
             if identifier not in self._ensembles:
                 continue
             for feature in features:
-                self._feature_ensembles.setdefault(feature, set()).add(identifier)
+                if feature.startswith("pre:"):
+                    self._feature_ensembles.setdefault(feature, set()).add(identifier)
         self._neuron_owner = {
             neuron: ensemble.identifier
             for ensemble in self._ensembles.values()

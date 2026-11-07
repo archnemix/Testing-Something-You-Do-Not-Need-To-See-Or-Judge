@@ -1,0 +1,69 @@
+name: Talk study (1M neurons)
+
+on:
+  push:
+    paths:
+      - scripts/run-talk-study
+      - .github/workflows/talk-study.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare repository logs
+        run: |
+          mkdir -p action-output
+          printf 'Run: %s\nCommit: %s\n\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" > action-output/talk-study.log
+      - name: Install project
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pip install -e '.[train]' pyyaml english-words \
+            2>&1 | tee -a action-output/talk-study-install.log
+      - name: Run unit tests
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests \
+            2>&1 | tee -a action-output/talk-study-tests.log
+      - name: Train the 1M-neuron brain on the full corpus
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m aster.talk_study 2>&1 | tee -a action-output/talk-study.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: talk-study
+          path: action-output
+      - name: Commit results to the triggering branch
+        if: always()
+        shell: bash
+        run: |
+          if [[ ! -f action-output/talk-study/report.json ]]; then
+            echo "No report to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f action-output
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "Talk study results: 1M neurons on the full corpus (run $GITHUB_RUN_ID)"
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push origin "HEAD:$GITHUB_REF_NAME"

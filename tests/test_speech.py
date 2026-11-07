@@ -62,6 +62,37 @@ class SpeechTests(unittest.TestCase):
         formed = form_sentence(net, ["word0"])
         self.assertEqual(formed[:3], ["word0", "comes", "after"])
 
+    def test_different_questions_get_different_formulated_answers(self) -> None:
+        """The user's complaint, as a test: no stored replay regardless of question."""
+        speaker = Speaker(warm=True)
+        speaker.net.observe("python", "means", "a large heavy-bodied constrictor snake")
+        speaker.net.observe_sequence("python means a large heavy-bodied constrictor snake")
+        what_is = speaker.respond("what is python")
+        what_means = speaker.respond("what does python mean")
+        verify = speaker.respond("is python a fruit")
+        self.assertIn("programming language", what_is)
+        self.assertIn("constrictor", what_means)
+        self.assertNotEqual(what_is, what_means)  # formulated per question
+        self.assertNotIn("fruit", verify)  # answers from knowledge, not echo
+
+    def test_speaking_practices_the_pathway(self) -> None:
+        net = PlasticNetwork()
+        net.observe_sequence("quiet rivers flow slowly")
+        before = net.successors("quiet")[0][1]
+        form_sentence(net, ["quiet"], practice=True)  # it says the sentence
+        after = net.successors("quiet")[0][1]
+        self.assertGreater(after, before)  # saying it nudged the pathway up
+        self.assertEqual(net.neuron_count, 15)  # speaking added nothing
+
+    def test_asking_nudges_what_it_recalls(self) -> None:
+        speaker = Speaker(warm=True)
+        speaker.net.observe("saffron", "means", "a golden spice from crocus flowers")
+        speaker.net.observe_sequence("saffron means a golden spice from crocus flowers")
+        before = speaker.net.successors("saffron")[0][1]
+        speaker.respond("what does saffron mean")
+        after = speaker.net.successors("saffron")[0][1]
+        self.assertGreater(after, before)  # recall is use; use strengthens
+
 
 if __name__ == "__main__":
     unittest.main()
