@@ -175,6 +175,37 @@ records meaning-quiz accuracy (asked early vs late in teaching), next-word
 accuracy on held-out sentences, and sample sentences the network forms on
 its own.
 
+## The learning loop: formulate, practice, end where a sentence ends
+
+Three changes turn storage-and-replay into a learning loop:
+
+1. **Answers are formulated from the question asked.** The reply to
+   "what is python" starts from *python is*; "what does python mean"
+   starts from *python means* -- different seeds, different pathways,
+   different sentences. (Before this, two different questions returned one
+   identical stored sentence; that failure is now a regression test.)
+2. **Use nudges the weights -- the loop that makes skills improve.**
+   Speaking strengthens the spoken pathway (`practice_sentence`: no new
+   neurons, no new memories -- only weights move); asking consolidates
+   what is recalled; idle pathways still decay. This is learning-by-use,
+   not saving.
+3. **Every sentence learns where it ends** (a final end-mark word taught
+   with each sentence), so speech stops at the boundary instead of
+   running on into other stored sentences.
+
+## Training the 1M-neuron brain (GitHub Actions)
+
+`src/aster/talk_study.py` downloads the full corpus (Project Gutenberg +
+WordNet), trains a 1,000,000-neuron budget on all of it -- every item
+variable-length, no padding, no truncation, no context window -- and
+reports meaning-quiz accuracy, held-out next-word skill, **verbatim-replay
+rate vs recombination** (how much is storage vs newly-formed speech),
+question-sensitivity (different questions must give different answers),
+and a repetition-vs-new-data probe (the same data taught twice nudges
+weights; double data teaches more). Runs on GitHub Actions (4 cores /
+16 GB) via the opt-in marker `scripts/run-talk-study`; the report is
+committed to `action-output/talk-study/report.json`.
+
 ## Install, run, test
 
 ```sh

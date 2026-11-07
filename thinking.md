@@ -1,5 +1,24 @@
 # Engineering journal
 
+## 2026-11-07 (6) — The user proved it was memorizing; the loop now learns
+
+The user caught the real flaw with one transcript: two different questions
+about python got the SAME stored sentence -- it was printing storage, not
+formulating answers -- and asked why the whole thing feels like memorizing
+rather than learning ("learning means nudging things as you learn;
+memorizing means just adding them in"). They were right on both counts.
+The loop now: (1) formulates answers from the question's own words, so
+'what is python' and 'what does python mean' walk different paths and say
+different things; (2) nudges on use -- speaking strengthens the spoken
+pathway and asking consolidates the recalled one, with zero new storage;
+(3) every sentence learns where it ends, killing the run-on replies. The
+memorization feeling had a real source: teaching was mostly additive and
+generation was replay; the tests now pin the difference (weights rise with
+use while neuron count stays fixed; verbatim-replay rate is measured).
+Then the 1M-neuron brain on the full corpus went to GitHub Actions. Honest
+note to keep: the n-gram-ish walk still chains other people's sentences
+when its own context runs out -- that is the next quality gap.
+
 ## 2026-11-07 (5) — It speaks: sentences fired from neurons, on real text
 
 Set out to kill the `{subject} {relation} {object}` template and let it
